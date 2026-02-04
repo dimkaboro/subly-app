@@ -1,0 +1,21 @@
+:root {
+  --color-cherry: #75070C;
+  --color-oat: #F0E6DA;
+  --color-olive: #4F6815;
+  --color-butter: #FFEDAB;
+  --color-white: #FFFFFF;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--color-oat);
+  color: #333;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
