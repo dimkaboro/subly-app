@@ -1,12 +1,40 @@
 import React, { useState } from 'react';
+// 👇 1. Импортируем useNavigate
+import { useNavigate } from 'react-router-dom';
 import characterVector from '../assets/registration-character.svg'; 
 import speechBubbleVector from '../assets/speech-bubble.svg';
 
 function Register() {
   const [isBtnHovered, setIsBtnHovered] = useState(false);
+  // 👇 2. Состояние для ховера стрелки
+  const [isArrowHovered, setIsArrowHovered] = useState(false);
+  
+  const navigate = useNavigate(); // Хук для навигации
 
   return (
     <section style={styles.section}>
+      
+      {/* 👇 3. АНИМИРОВАННАЯ СТРЕЛКА "НАЗАД" */}
+      <div 
+        style={styles.backArrowContainer}
+        onClick={() => navigate('/')} // Возврат на главную
+        onMouseEnter={() => setIsArrowHovered(true)}
+        onMouseLeave={() => setIsArrowHovered(false)}
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          style={{
+            ...styles.backArrowSvg,
+            // При ховере сдвигаем стрелку влево
+            transform: isArrowHovered ? 'translateX(-5px)' : 'translateX(0)',
+          }}
+        >
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+      </div>
+      {/* ---------------------------------- */}
+
       <div style={styles.container}>
         
         {/* --- ЛЕВАЯ КОЛОНКА --- */}
@@ -23,7 +51,7 @@ function Register() {
         {/* --- ПРАВАЯ КОЛОНКА --- */}
         <div style={styles.rightColumn}>
           
-          {/* 🔥 ЗАГОЛОВОК ВМЕСТО ЛОГОТИПА */}
+          {/* УМЕНЬШЕННЫЙ ЗАГОЛОВОК */}
           <h1 style={styles.title}>Registrace</h1>
 
           <form style={styles.form}>
@@ -81,7 +109,25 @@ const styles = {
     backgroundColor: colors.bgBeige,
     fontFamily: 'Montserrat, sans-serif',
     overflow: 'hidden',
+    position: 'relative', // Важно для абсолютного позиционирования стрелки
   },
+
+  // 👇 4. СТИЛИ ДЛЯ СТРЕЛКИ
+  backArrowContainer: {
+    position: 'absolute',
+    top: '40px',
+    left: '40px',
+    cursor: 'pointer',
+    padding: '10px',
+    zIndex: 10,
+  },
+  backArrowSvg: {
+    width: '40px',
+    height: '40px',
+    fill: colors.deepRed, // Здесь используем бордовый цвет для контраста
+    transition: 'transform 0.3s ease',
+  },
+  // -----------------------
   
   container: {
     display: 'flex',
@@ -149,14 +195,13 @@ const styles = {
     paddingRight: '100px', 
   },
   
-  // 🔥 СТИЛЬ ЗАГОЛОВКА
   title: {
-    fontSize: '40px',            // Крупный, уверенный шрифт
-    fontWeight: '900',
-    color: colors.deepRed,       // Тот же бордовый, что и у полей
+    fontSize: '40px',
+    fontWeight: '800',
+    color: colors.deepRed,
     marginBottom: '35px',
-    letterSpacing: '-1px',
-    textTransform: 'uppercase',  // Можно убрать, если хочешь строчными
+    letterSpacing: '0.5px',
+    textAlign: 'center',
   },
   
   form: {

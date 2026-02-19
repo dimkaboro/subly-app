@@ -7,10 +7,33 @@ function Login() {
   // 👇 2. Создаем "переключатели" для наведения мыши
   const [isLinkHovered, setIsLinkHovered] = useState(false);
   const [isBtnHovered, setIsBtnHovered] = useState(false);
+  
+  // 🟢 ДОБАВЛЕНО: состояние для стрелки
+  const [isArrowHovered, setIsArrowHovered] = useState(false);
 
   return (
     <section style={styles.section}>
       
+      {/* 🟢 ДОБАВЛЕНО: Анимированная стрелка "Назад" */}
+      <Link 
+        to="/" 
+        style={styles.backArrowContainer}
+        onMouseEnter={() => setIsArrowHovered(true)}
+        onMouseLeave={() => setIsArrowHovered(false)}
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          style={{
+            ...styles.backArrowSvg,
+            transform: isArrowHovered ? 'translateX(-5px)' : 'translateX(0)',
+          }}
+        >
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+      </Link>
+      {/* ------------------------------------------- */}
+
       <div style={styles.loginContainer}>
         
         <div style={styles.logoHeader}>
@@ -87,6 +110,25 @@ const styles = {
     backgroundColor: '#5A6E26',
     fontFamily: 'Montserrat, sans-serif',
   },
+  
+  // 🟢 ДОБАВЛЕНО: Стили для стрелки
+  backArrowContainer: {
+    position: 'absolute',
+    top: '40px',
+    left: '40px',
+    cursor: 'pointer',
+    padding: '10px',
+    zIndex: 10,
+    display: 'flex',
+  },
+  backArrowSvg: {
+    width: '40px',
+    height: '40px',
+    fill: '#EFE3D7', 
+    transition: 'transform 0.3s ease',
+  },
+  // ------------------------------
+
   loginContainer: {
     display: 'flex',
     flexDirection: 'column',

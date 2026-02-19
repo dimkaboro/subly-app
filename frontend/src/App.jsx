@@ -8,14 +8,13 @@ import Hero from './components/Hero';
 // Страницы
 import Register from './pages/Register';
 import Login from './pages/Login';
+import About from './pages/About';
+import Services from './pages/Services'; // 👇 Подключили страницу услуг
 
 function App() {
   return (
     <Routes>
-      {/* ГЛАВНАЯ СТРАНИЦА:
-          Показываем И Хедер, И Hero.
-          Они обернуты в пустые скобки <></>, так как element принимает только один родительский блок.
-      */}
+      {/* ГЛАВНАЯ СТРАНИЦА */}
       <Route path="/" element={
         <>
           <Header />
@@ -23,9 +22,23 @@ function App() {
         </>
       } />
       
-      {/* СТРАНИЦЫ ВХОДА И РЕГИСТРАЦИИ:
-          Здесь Хедера НЕТ, только сама страница.
-      */}
+      {/* СТРАНИЦА "O NÁS" */}
+      <Route path="/about" element={
+        <>
+          <Header />
+          <About />
+        </>
+      } />
+
+      {/* СТРАНИЦА "SLUŽBY" 👇 Добавили маршрут */}
+      <Route path="/services" element={
+        <>
+          <Header />
+          <Services />
+        </>
+      } />
+      
+      {/* СТРАНИЦЫ ВХОДА И РЕГИСТРАЦИИ (без хедера) */}
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
     </Routes>

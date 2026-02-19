@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-// 👇 Импортируем твой логотип
+// Импортируем логотип
 import logo from '../assets/logo.svg'; 
 
 function Header() {
@@ -10,7 +10,6 @@ function Header() {
       
       {/* ЛЕВЫЙ БЛОК: Логотип */}
       <div style={styles.sideBlock}>
-        {/* Ссылка на главную через картинку */}
         <Link to="/" style={styles.logoLink}>
            <img src={logo} alt="Subly Logo" style={styles.logoImage} />
         </Link>
@@ -18,10 +17,9 @@ function Header() {
 
       {/* ЦЕНТР: Меню */}
       <nav style={styles.nav}>
-        <a href="#" style={styles.link}>O nás</a>
-        <a href="#" style={styles.link}>Služby</a>
-        
-        {/* Ссылка на Логин */}
+        <Link to="/about" style={styles.link}>O nás</Link>
+        {/* 👇 Заменили тег <a> на <Link> и направили на /services */}
+        <Link to="/services" style={styles.link}>Služby</Link>
         <Link to="/login" style={styles.link}>Login</Link>
       </nav>
 
@@ -42,29 +40,22 @@ const styles = {
         color: 'var(--color-white)',
         fontFamily: 'Montserrat, sans-serif', 
     },
-    // Боковые блоки для центровки меню
     sideBlock: {
         width: '200px', 
         display: 'flex',
         alignItems: 'center',
-        // justifyContent: 'flex-start', // Логотип слева
     },
-    
-    // 👇 Стили для ссылки-обертки логотипа
     logoLink: {
         display: 'flex',
         alignItems: 'center',
         textDecoration: 'none',
         cursor: 'pointer',
     },
-    
-    // 👇 Стили для самой картинки SVG
     logoImage: {
-        height: '50px',   // Высота логотипа (подстрой под себя: 40px, 50px, 60px)
-        width: 'auto',    // Ширина подстроится автоматически
-        display: 'block', // Убирает лишние отступы снизу
+        height: '50px',   
+        width: 'auto',    
+        display: 'block', 
     },
-
     nav: {
         display: 'flex',
         width: '800px',          
