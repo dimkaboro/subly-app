@@ -104,7 +104,7 @@ const styles = {
         height: 'calc(100vh - 100px)',
         fontFamily: 'Montserrat, sans-serif',
         overflow: 'hidden',
-        backgroundColor: '#F5EFE8',
+        backgroundColor: '#FFEDAB',
     },
     contentWrapper: {
         display: 'flex',

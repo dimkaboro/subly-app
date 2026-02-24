@@ -5,11 +5,74 @@ import characterVector from '../assets/registration-character.svg';
 import speechBubbleVector from '../assets/speech-bubble.svg';
 
 function Register() {
+  const [showRules, setShowRules] = useState(false);
+  
   const [isBtnHovered, setIsBtnHovered] = useState(false);
   // 👇 2. Состояние для ховера стрелки
   const [isArrowHovered, setIsArrowHovered] = useState(false);
   
   const navigate = useNavigate(); // Хук для навигации
+
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    repeat_password: ''
+  });
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // 👇 2. ОБРАБОТЧИК ВВОДА (сохраняет текст, когда ты печатаешь)
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 👇 3. ФУНКЦИЯ ОТПРАВКИ НА БЭКЕНД
+  const handleSubmit = async (e) => {
+    e.preventDefault(); 
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!formData.username || !formData.email || !formData.password || !formData.repeat_password) {
+      setErrorMsg('Prosím, vyplňte všechna pole.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 👇 ВОТ ЗДЕСЬ ИСПРАВЛЕНИЕ ДЛЯ БЕЛОГО ЭКРАНА
+        if (Array.isArray(data.detail)) {
+          // Если ошибка 422 от FastAPI (это массив)
+          // Достаем текст ошибки и убираем техническую приписку "Value error, "
+          const errorText = data.detail[0].msg;
+          setErrorMsg(errorText.replace('Value error, ', '')); 
+        } else {
+          // Если это наша обычная ошибка 400 (просто текст)
+          setErrorMsg(data.detail || 'Něco se pokazilo');
+        }
+      } else {
+        setSuccessMsg('Účet byl úspěšně vytvořen! Přesměrování...');
+        setFormData({ username: '', email: '', password: '', repeat_password: '' });
+        
+        // Переход на страницу логина через 2 секунды
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
+    } catch (error) {
+      setErrorMsg('Chyba připojení k serveru.');
+    }
+  };
+
+
 
   return (
     <section style={styles.section}>
@@ -54,23 +117,45 @@ function Register() {
           {/* УМЕНЬШЕННЫЙ ЗАГОЛОВОК */}
           <h1 style={styles.title}>Registrace</h1>
 
-          <form style={styles.form}>
+          {/* 👇 СООБЩЕНИЯ ОБ ОШИБКЕ/УСПЕХЕ (стили прописаны прямо тут, чтобы не трогать твой низ файла) */}
+          {errorMsg && (
+            <div style={{ backgroundColor: '#FFD2D2', color: '#D8000C', padding: '10px 20px', borderRadius: '10px', marginBottom: '20px', width: '100%', maxWidth: '550px', textAlign: 'center', fontWeight: '600' }}>
+              {errorMsg}
+            </div>
+          )}
+          {successMsg && (
+            <div style={{ backgroundColor: '#DFF2BF', color: '#4F8A10', padding: '10px 20px', borderRadius: '10px', marginBottom: '20px', width: '100%', maxWidth: '550px', textAlign: 'center', fontWeight: '600' }}>
+              {successMsg}
+            </div>
+          )}
+
+          {/* 👇 К ФОРМЕ ДОБАВЛЕН onSubmit */}
+          <form style={styles.form} onSubmit={handleSubmit}>
             <div style={styles.inputContainer}>
-              <input type="text" placeholder="Přezdívka" style={styles.input} />
+              {/* 👇 Добавлены name, value и onChange */}
+              <input type="text" name="username" value={formData.username} onChange={handleChange} placeholder="Přezdívka" style={styles.input} />
             </div>
             
             <div style={styles.inputContainer}>
-              <input type="email" placeholder="E-mail" style={styles.input} />
+              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="E-mail" style={styles.input} />
             </div>
 
-            <div style={styles.inputContainer}>
-              <input type="password" placeholder="Heslo" style={styles.input} />
-            </div>
+            <div style={styles.inputContainer}><input type="password" name="password" value={formData.password} onChange={handleChange} onFocus={() => setShowRules(true)} onBlur={() => setShowRules(false)} placeholder="Heslo" style={styles.input} /></div>
 
-            <div style={styles.inputContainer}>
-              <input type="password" placeholder="Zopakujte heslo" style={styles.input} />
-            </div>
-          </form>
+            <div style={styles.inputContainer}><input type="password" name="repeat_password" value={formData.repeat_password} onChange={handleChange} onFocus={() => setShowRules(true)} onBlur={() => setShowRules(false)} placeholder="Zopakujte heslo" style={styles.input} /></div>
+
+            {showRules && (
+            <div style={styles.passwordRulesContainer}>
+            <ul style={styles.passwordRulesList}>
+             <li>Minimálně 8 znaků</li>
+             <li>Alespoň 1 velké písmeno</li>
+             <li>Alespoň 1 číslice</li>
+    </ul>
+  </div>
+)}
+</form>
+          
+
 
           <div 
             style={{
@@ -79,8 +164,10 @@ function Register() {
             }}
             onMouseEnter={() => setIsBtnHovered(true)}
             onMouseLeave={() => setIsBtnHovered(false)}
+            onClick={handleSubmit} // 👇 ПРИВЯЗАЛИ ФУНКЦИЮ ОТПРАВКИ
           >
-            <button style={styles.nextButton}>
+            {/* 👇 Добавлен type="submit" */}
+            <button type="submit" style={styles.nextButton}>
               Dále
             </button>
           </div>
@@ -93,7 +180,7 @@ function Register() {
 
 // --- СТИЛИ ---
 const colors = {
-  bgBeige: '#F2EBE3',
+  bgBeige: '#FFEDAB',
   deepRed: '#680E0E', 
   oliveGreen: '#526F1F',
   bubbleText: '#3F4E1D',
@@ -255,6 +342,23 @@ const styles = {
     cursor: 'pointer',
     pointerEvents: 'none',
     fontFamily: 'inherit',
+  },
+  passwordRulesContainer: {
+    width: '100%',
+    padding: '0 10px',
+    color: colors.deepRed,
+    fontSize: '15px',
+    textAlign: 'left',
+    marginTop: '-15px', // Подтягиваем список выше к инпуту
+    opacity: 0.8,
+    fontWeight: '500',
+  },
+  passwordRulesList: {
+    margin: 0,
+    paddingLeft: '25px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
   },
 };
 

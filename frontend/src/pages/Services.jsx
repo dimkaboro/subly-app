@@ -72,7 +72,7 @@ function Services() {
 
 // --- СТИЛИ ---
 const colors = {
-  bgBeige: '#F2EBE3',
+  bgBeige: '#FFEDAB',
   deepRed: '#680E0E', 
   oliveGreen: '#526F1F',
   darkText: '#3F4E1D', 
