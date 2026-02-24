@@ -2,6 +2,9 @@ import re
 from pydantic import BaseModel, EmailStr, model_validator, field_validator
 
 # ---СХЕМЫ ДЛЯ ПОЛЬЗОВАТЕЛЯ--- 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
 # 1. Схема для регистрации, данные приходят из React
 class UserCreate(BaseModel):
@@ -36,3 +39,5 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+

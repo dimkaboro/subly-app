@@ -1,5 +1,5 @@
 import React, { useState } from 'react'; // 👇 1. Добавили useState
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.svg';
 import loginVector from '../assets/login-vector.svg'; 
 
@@ -11,10 +11,56 @@ function Login() {
   // 🟢 ДОБАВЛЕНО: состояние для стрелки
   const [isArrowHovered, setIsArrowHovered] = useState(false);
 
+  // логика авторизации 
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setErrorMsg('');
+
+    try {
+      const response = await fetch('http://localhost:8000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Шлем только то, что нужно для UserLogin
+        body: JSON.stringify({ 
+          email: formData.email, 
+          password: formData.password 
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 👇 ПРОВЕРКА: если пришел массив (422), берем текст. Если строка (401), берем её.
+        const rawError = data.detail;
+        if (Array.isArray(rawError)) {
+          setErrorMsg(rawError[0].msg);
+        } else {
+          setErrorMsg(rawError || 'Nesprávný e-mail nebo heslo');
+        }
+      } else {
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('username', data.username);
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      setErrorMsg('Chyba připojení к serveru');
+    }
+  };
+
   return (
     <section style={styles.section}>
       
-      {/* 🟢 ДОБАВЛЕНО: Анимированная стрелка "Назад" */}
       <Link 
         to="/" 
         style={styles.backArrowContainer}
@@ -32,7 +78,6 @@ function Login() {
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
       </Link>
-      {/* ------------------------------------------- */}
 
       <div style={styles.loginContainer}>
         
@@ -41,20 +86,35 @@ function Login() {
           <img src={logo} alt="Subly Logo" style={styles.logo} />
         </div>
 
-        <form style={styles.form}>
+        {/* 👇 БЛОК ОШИБКИ (стиль вшит инлайном, чтобы не трогать твой объект styles) */}
+        {errorMsg && (
+          <div style={{ color: '#D8000C', marginBottom: '15px', fontWeight: '600', textAlign: 'center' }}>
+            {errorMsg}
+          </div>
+        )}
+
+        <form style={styles.form} onSubmit={handleSubmit}>
           <div style={styles.inputContainer}>
             <input 
-              type="text" 
-              placeholder="Přezdívka" 
+              type="email" 
+              name="email" // Добавили имя
+              value={formData.email} // Привязали значение
+              onChange={handleChange} // Привязали ввод
+              placeholder="E-mail" 
               style={styles.input} 
+              required
             />
           </div>
 
           <div style={styles.inputContainer}>
             <input 
               type="password" 
+              name="password" // Добавили имя
+              value={formData.password} // Привязали значение
+              onChange={handleChange} // Привязали ввод
               placeholder="Heslo" 
               style={styles.input} 
+              required
             />
           </div>
 
@@ -65,22 +125,18 @@ function Login() {
 
         <div style={styles.bottomButtons}>
           
-          {/* ССЫЛКА "Vytvořit účet" */}
           <Link 
             to="/register" 
-            // 👇 Объединяем обычный стиль и стиль при наведении
             style={{
               ...styles.createAccountLink,
               ...(isLinkHovered ? styles.createAccountLinkHover : {})
             }}
-            // 👇 Отслеживаем мышку
             onMouseEnter={() => setIsLinkHovered(true)}
             onMouseLeave={() => setIsLinkHovered(false)}
           >
             Vytvořit účet
           </Link>
 
-          {/* КНОПКА "Dále" */}
           <div 
             style={{
               ...styles.nextButtonContainer,
@@ -88,8 +144,9 @@ function Login() {
             }}
             onMouseEnter={() => setIsBtnHovered(true)}
             onMouseLeave={() => setIsBtnHovered(false)}
+            onClick={handleSubmit} // 👇 ПРИВЯЗАЛИ КЛИК
           >
-            <button style={styles.nextButton}>
+            <button type="submit" style={styles.nextButton}>
               Dále
             </button>
           </div>
