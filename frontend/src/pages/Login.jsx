@@ -10,6 +10,7 @@ function Login() {
   
   // 🟢 ДОБАВЛЕНО: состояние для стрелки
   const [isArrowHovered, setIsArrowHovered] = useState(false);
+  const [isForgotHovered, setIsForgotHovered] = useState(false);
 
   // логика авторизации 
   const navigate = useNavigate();
@@ -118,11 +119,19 @@ function Login() {
             />
           </div>
 
-          <p style={styles.forgotPassword}>
-            Zapomněli jste přezdívku nebo heslo?
-          </p>
-        </form>
+          <Link 
+  to="/forgot-password" 
+  style={{
+    ...styles.forgotPassword,
+    ...(isForgotHovered ? styles.forgotPasswordHover : {})
+  }}
+  onMouseEnter={() => setIsForgotHovered(true)}
+  onMouseLeave={() => setIsForgotHovered(false)}
+>
+  Zapomněli jste přezdívku nebo heslo?
+</Link>
 
+</form> 
         <div style={styles.bottomButtons}>
           
           <Link 

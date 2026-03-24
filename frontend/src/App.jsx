@@ -10,6 +10,8 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import About from './pages/About';
 import Services from './pages/Services'; // 👇 Подключили страницу услуг
+import ForgotPassword from './pages/ForgotPassword';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
@@ -41,6 +43,8 @@ function App() {
       {/* СТРАНИЦЫ ВХОДА И РЕГИСТРАЦИИ (без хедера) */}
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
   );
 }
