@@ -1,0 +1,27 @@
+# --- Python ---
+backend/venv/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- JavaScript / React ---
+frontend/node_modules/
+node_modules/
+frontend/dist/
+frontend/build/
+
+# --- Секреты ---
+.env
+backend/.env
+*.env
+
+# --- Базы данных ---
+*.db
+*.sqlite3
+
+# --- Настройки редактора ---
+.vscode/
+.idea/
+.DS_Store
