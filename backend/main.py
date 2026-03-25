@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
@@ -49,6 +50,28 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# 3.1 OAuth2 Scheme
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Nesprávný token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(email=email)
+    except JWTError:
+        raise credentials_exception
+    user = db.query(models.User).filter(models.User.email == token_data.email).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
 # 4. Маршрут регистрации
 @app.post("/register", response_model=schemas.UserResponse)
@@ -103,3 +126,59 @@ def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer", 
         "username": user.username
     }
+
+# 6. Получить подписки текущего пользователя
+@app.get("/api/subscriptions", response_model=list[schemas.SubscriptionResponse])
+def get_subscriptions(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return current_user.subscriptions
+
+# 7. Создать подписку
+@app.post("/api/subscriptions", response_model=schemas.SubscriptionResponse)
+def create_subscription(sub: schemas.SubscriptionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    new_sub = models.Subscription(
+        name=sub.name,
+        price=sub.price,
+        currency=sub.currency,
+        cycle=sub.cycle,
+        nextPayment=sub.nextPayment,
+        user_id=current_user.id
+    )
+    db.add(new_sub)
+    db.commit()
+    db.refresh(new_sub)
+    return new_sub
+
+# 8. Удалить подписку
+@app.delete("/api/subscriptions/{sub_id}")
+def delete_subscription(sub_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    sub_query = db.query(models.Subscription).filter(
+        models.Subscription.id == sub_id, 
+        models.Subscription.user_id == current_user.id
+    )
+    sub = sub_query.first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Předplatné nebylo nalezeno")
+    
+    sub_query.delete(synchronize_session=False)
+    db.commit()
+    return {"detail": "Smazáno úspěšně"}
+
+# 9. Обновить подписку
+@app.put("/api/subscriptions/{sub_id}", response_model=schemas.SubscriptionResponse)
+def update_subscription(sub_id: int, sub_data: schemas.SubscriptionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    sub = db.query(models.Subscription).filter(
+        models.Subscription.id == sub_id,
+        models.Subscription.user_id == current_user.id
+    ).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Předplatné nebylo nalezeno")
+    
+    sub.name = sub_data.name
+    sub.price = sub_data.price
+    sub.currency = sub_data.currency
+    sub.cycle = sub_data.cycle
+    sub.nextPayment = sub_data.nextPayment
+    
+    db.commit()
+    db.refresh(sub)
+    return sub

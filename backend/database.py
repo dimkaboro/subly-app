@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 # 1. Адрес нашей базы данных
 # Мы берем эти данные (user, password, db) из твоего docker-compose.yml
 # Если ты ничего не менял в докере, то оставляй как есть.
-URL_DATABASE = "postgresql://user:password@localhost:5432/subscriptions_db"
+URL_DATABASE = "postgresql://user:password@127.0.0.1:5432/subscriptions_db"
 
 # 2. Создаем "движок" (Engine)
 # Это сердце подключения. Через него запросы летят в базу.

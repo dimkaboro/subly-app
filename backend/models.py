@@ -18,6 +18,9 @@ class Subscription(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     price = Column(Integer)
+    currency = Column(String, default="CZK")
+    cycle = Column(String, default="Měsíčně")
+    nextPayment = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="subscriptions")

@@ -40,4 +40,24 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# ---СХЕМЫ ДЛЯ ТОКЕНА---
+class TokenData(BaseModel):
+    email: str | None = None
 
+# ---СХЕМЫ ДЛЯ ПОДПИСОК---
+class SubscriptionBase(BaseModel):
+    name: str
+    price: int
+    currency: str = "CZK"
+    cycle: str = "Měsíčně"
+    nextPayment: str
+
+class SubscriptionCreate(SubscriptionBase):
+    pass
+
+class SubscriptionResponse(SubscriptionBase):
+    id: int
+    user_id: int
+
+    class Config:
+        from_attributes = True
