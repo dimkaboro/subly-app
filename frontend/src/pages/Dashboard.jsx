@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, CartesianGrid } from 'recharts';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -295,27 +295,120 @@ function Dashboard() {
             <header style={styles.header}>
               <h2 style={styles.pageTitle}>Grafy výdajů</h2>
             </header>
-            
-            <div style={styles.chartSectionFull}>
-              <h3 style={styles.sectionTitle}>Rozložení výdajů podle služeb</h3>
-              <div style={styles.chartContainerFull}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={subscriptions} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#A68E7A', fontSize: 14}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#A68E7A', fontSize: 14}} />
-                    <Tooltip 
-                      cursor={{fill: 'rgba(239, 227, 215, 0.4)'}} 
-                      contentStyle={{borderRadius: '10px', border: 'none', boxShadow: '0 4px 10px rgba(0,0,0,0.1)'}}
-                    />
-                    <Bar dataKey="price" radius={[10, 10, 0, 0]}>
-                      {subscriptions.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill="#7A2F2F" />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+
+            {subscriptions.length === 0 ? (
+              <div style={styles.chartEmptyState}>
+                <span style={{ fontSize: '64px' }}>📊</span>
+                <h3 style={{ color: '#7A2F2F', fontSize: '22px', fontWeight: '800', margin: '16px 0 8px' }}>Zatím žádná data</h3>
+                <p style={{ color: '#A68E7A', fontSize: '15px', fontWeight: '500' }}>Přidejte předplatné a uvidíte zde přehledné grafy</p>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Statistiky nahoře */}
+                <div style={styles.summaryGrid}>
+                  <div style={styles.summaryCard}>
+                    <p style={styles.summaryLabel}>Celkem měsíčně</p>
+                    <h3 style={styles.summaryValue}>{totalMonthly} CZK</h3>
+                  </div>
+                  <div style={styles.summaryCard}>
+                    <p style={styles.summaryLabel}>Nejdražší služba</p>
+                    <h3 style={styles.summaryValueHighlight}>
+                      {subscriptions.reduce((max, s) => s.price > max.price ? s : max, subscriptions[0]).name}
+                    </h3>
+                  </div>
+                  <div style={styles.summaryCard}>
+                    <p style={styles.summaryLabel}>Průměrná cena</p>
+                    <h3 style={styles.summaryValue}>{Math.round(totalMonthly / subscriptions.length)} CZK</h3>
+                  </div>
+                </div>
+
+                {/* Два графика рядом */}
+                <div style={styles.chartsRow}>
+                  {/* Donut Chart */}
+                  <div style={styles.chartCard}>
+                    <h3 style={styles.sectionTitle}>Rozložení výdajů</h3>
+                    <p style={styles.chartSubtitle}>Podíl jednotlivých služeb na celkových nákladech</p>
+                    <div style={styles.chartContainerSquare}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={subscriptions}
+                            dataKey="price"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={70}
+                            outerRadius={120}
+                            paddingAngle={3}
+                            stroke="none"
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {subscriptions.map((entry, index) => (
+                              <Cell key={`pie-${index}`} fill={['#7A2F2F', '#5A6E26', '#C4883C', '#3D6B7E', '#8B5C8B', '#D4785C', '#2E8B57', '#CD853F'][index % 8]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value) => [`${value} CZK`, 'Cena']}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', fontFamily: 'Montserrat, sans-serif', fontWeight: '600' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {/* Legenda pod grafem */}
+                    <div style={styles.legendContainer}>
+                      {subscriptions.map((sub, index) => (
+                        <div key={sub.id} style={styles.legendItem}>
+                          <span style={{ ...styles.legendDot, backgroundColor: ['#7A2F2F', '#5A6E26', '#C4883C', '#3D6B7E', '#8B5C8B', '#D4785C', '#2E8B57', '#CD853F'][index % 8] }} />
+                          <span style={styles.legendLabel}>{sub.name}</span>
+                          <span style={styles.legendValue}>{sub.price} {sub.currency}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bar Chart */}
+                  <div style={styles.chartCard}>
+                    <h3 style={styles.sectionTitle}>Porovnání nákladů</h3>
+                    <p style={styles.chartSubtitle}>Přehled cen všech vašich předplatných</p>
+                    <div style={styles.chartContainerSquare}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={subscriptions} margin={{ top: 20, right: 20, left: -10, bottom: 5 }} barCategoryGap="25%">
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(166,142,122,0.15)" vertical={false} />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#A68E7A', fontSize: 13, fontWeight: 600 }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fill: '#A68E7A', fontSize: 13, fontWeight: 600 }} unit=" CZK" />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(239, 227, 215, 0.3)', radius: 8 }}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', fontFamily: 'Montserrat, sans-serif', fontWeight: '600' }}
+                            formatter={(value) => [`${value} CZK`, 'Cena']}
+                          />
+                          <Bar dataKey="price" radius={[10, 10, 0, 0]} maxBarSize={60}>
+                            {subscriptions.map((entry, index) => (
+                              <Cell key={`bar-${index}`} fill={['#7A2F2F', '#5A6E26', '#C4883C', '#3D6B7E', '#8B5C8B', '#D4785C', '#2E8B57', '#CD853F'][index % 8]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {/* Podrobnosti pod grafem */}
+                    <div style={styles.barDetailsContainer}>
+                      {subscriptions
+                        .slice()
+                        .sort((a, b) => b.price - a.price)
+                        .map((sub, index) => (
+                          <div key={sub.id} style={styles.barDetailRow}>
+                            <span style={styles.barDetailRank}>#{index + 1}</span>
+                            <span style={styles.barDetailName}>{sub.name}</span>
+                            <div style={styles.barDetailBarBg}>
+                              <div style={{ ...styles.barDetailBarFill, width: `${(sub.price / subscriptions.reduce((max, s) => Math.max(max, s.price), 0)) * 100}%` }} />
+                            </div>
+                            <span style={styles.barDetailPrice}>{sub.price} {sub.currency}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -327,9 +420,86 @@ function Dashboard() {
         )}
         
         {activeTab === 'export' && (
-          <header style={styles.header}>
-            <h2 style={styles.pageTitle}>Export dat</h2>
-          </header>
+          <>
+            <header style={styles.header}>
+              <h2 style={styles.pageTitle}>Export dat</h2>
+              {subscriptions.length > 0 && (
+                <button
+                  style={styles.addButton}
+                  onClick={() => {
+                    const bom = '\uFEFF';
+                    const header = 'Název;Cena;Měna;Cyklus;Další platba\n';
+                    const rows = subscriptions.map(s => `${s.name};${s.price};${s.currency};${s.cycle};${s.nextPayment}`).join('\n');
+                    const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `subly_export_${new Date().toISOString().slice(0,10)}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  📥 Stáhnout CSV
+                </button>
+              )}
+            </header>
+
+            {subscriptions.length === 0 ? (
+              <div style={styles.chartEmptyState}>
+                <span style={{ fontSize: '64px' }}>📄</span>
+                <h3 style={{ color: '#7A2F2F', fontSize: '22px', fontWeight: '800', margin: '16px 0 8px' }}>Žádná data k exportu</h3>
+                <p style={{ color: '#A68E7A', fontSize: '15px', fontWeight: '500' }}>Přidejte předplatné a pak je můžete exportovat do CSV</p>
+              </div>
+            ) : (
+              <div style={styles.exportSection}>
+                <div style={styles.exportInfo}>
+                  <div style={styles.exportInfoIcon}>📊</div>
+                  <div>
+                    <h4 style={styles.exportInfoTitle}>Náhled dat k exportu</h4>
+                    <p style={styles.exportInfoDesc}>{subscriptions.length} předplatných • Celkem {totalMonthly} CZK měsíčně</p>
+                  </div>
+                </div>
+
+                <div style={styles.exportTableWrapper}>
+                  <table style={styles.exportTable}>
+                    <thead>
+                      <tr>
+                        <th style={styles.exportTh}>Název</th>
+                        <th style={styles.exportTh}>Cena</th>
+                        <th style={styles.exportTh}>Měna</th>
+                        <th style={styles.exportTh}>Cyklus</th>
+                        <th style={styles.exportTh}>Další platba</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subscriptions.map((sub) => (
+                        <tr key={sub.id}>
+                          <td style={styles.exportTd}>
+                            <span style={styles.exportTdName}>{sub.name}</span>
+                          </td>
+                          <td style={styles.exportTd}>
+                            <span style={styles.exportTdPrice}>{sub.price}</span>
+                          </td>
+                          <td style={styles.exportTd}>{sub.currency}</td>
+                          <td style={styles.exportTd}>{sub.cycle}</td>
+                          <td style={styles.exportTd}>{sub.nextPayment}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td style={{ ...styles.exportTd, fontWeight: '800', color: '#7A2F2F' }}>Celkem</td>
+                        <td style={{ ...styles.exportTd, fontWeight: '800', color: '#7A2F2F' }}>{totalMonthly}</td>
+                        <td style={styles.exportTd}>CZK</td>
+                        <td style={styles.exportTd}>—</td>
+                        <td style={styles.exportTd}>—</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* МОДАЛЬНОЕ ОКНО — Премиум дизайн */}
@@ -788,17 +958,194 @@ const styles = {
     opacity: 0.6,
     transition: 'opacity 0.2s',
   },
-  // Блоки для страницы с графиками
-  chartSectionFull: {
+  // ============ СТИЛИ ДЛЯ СТРАНИЦЫ ГРАФИКОВ ============
+  chartsRow: {
+    display: 'flex',
+    gap: '24px',
+    marginBottom: '30px',
+  },
+  chartCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: '28px',
+    borderRadius: '20px',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  chartSubtitle: {
+    color: '#A68E7A',
+    fontSize: '13px',
+    fontWeight: '500',
+    margin: '0 0 20px 0',
+  },
+  chartContainerSquare: {
+    height: '320px',
+    width: '100%',
+  },
+  chartEmptyState: {
+    backgroundColor: '#FFFFFF',
+    padding: '80px 40px',
+    borderRadius: '20px',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  legendContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+    marginTop: '20px',
+    padding: '16px 0 0',
+    borderTop: '1px solid rgba(166,142,122,0.15)',
+  },
+  legendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '6px 12px',
+    backgroundColor: '#F9F6F0',
+    borderRadius: '10px',
+    fontSize: '13px',
+  },
+  legendDot: {
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
+  legendLabel: {
+    color: '#5A6E26',
+    fontWeight: '700',
+  },
+  legendValue: {
+    color: '#A68E7A',
+    fontWeight: '600',
+  },
+  barDetailsContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginTop: '20px',
+    padding: '16px 0 0',
+    borderTop: '1px solid rgba(166,142,122,0.15)',
+  },
+  barDetailRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  barDetailRank: {
+    color: '#A68E7A',
+    fontSize: '12px',
+    fontWeight: '800',
+    minWidth: '24px',
+  },
+  barDetailName: {
+    color: '#5A6E26',
+    fontSize: '14px',
+    fontWeight: '700',
+    minWidth: '100px',
+  },
+  barDetailBarBg: {
+    flex: 1,
+    height: '8px',
+    backgroundColor: '#F0EAE2',
+    borderRadius: '4px',
+    overflow: 'hidden',
+  },
+  barDetailBarFill: {
+    height: '100%',
+    backgroundColor: '#7A2F2F',
+    borderRadius: '4px',
+    transition: 'width 0.6s ease',
+  },
+  barDetailPrice: {
+    color: '#7A2F2F',
+    fontSize: '14px',
+    fontWeight: '800',
+    minWidth: '80px',
+    textAlign: 'right',
+  },
+
+  // ============ СТИЛИ ДЛЯ ЭКСПОРТА CSV ============
+  exportSection: {
     backgroundColor: '#FFFFFF',
     padding: '30px',
     borderRadius: '20px',
     boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
   },
-  chartContainerFull: {
-    height: '400px',
+  exportInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    padding: '20px',
+    backgroundColor: 'rgba(90, 110, 38, 0.06)',
+    borderRadius: '14px',
+    marginBottom: '24px',
+    border: '1px solid rgba(90, 110, 38, 0.12)',
+  },
+  exportInfoIcon: {
+    fontSize: '32px',
+    backgroundColor: '#FFFFFF',
+    width: '52px',
+    height: '52px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '14px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    flexShrink: 0,
+  },
+  exportInfoTitle: {
+    color: '#5A6E26',
+    fontSize: '16px',
+    fontWeight: '800',
+    margin: '0 0 4px 0',
+  },
+  exportInfoDesc: {
+    color: '#A68E7A',
+    fontSize: '14px',
+    fontWeight: '500',
+    margin: 0,
+  },
+  exportTableWrapper: {
+    overflowX: 'auto',
+    borderRadius: '14px',
+    border: '1px solid rgba(166, 142, 122, 0.15)',
+  },
+  exportTable: {
     width: '100%',
-    marginTop: '20px',
+    borderCollapse: 'collapse',
+    fontFamily: 'Montserrat, sans-serif',
+  },
+  exportTh: {
+    backgroundColor: '#F9F6F0',
+    color: '#7A2F2F',
+    fontSize: '12px',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    padding: '14px 20px',
+    textAlign: 'left',
+    borderBottom: '2px solid rgba(166, 142, 122, 0.15)',
+  },
+  exportTd: {
+    padding: '14px 20px',
+    fontSize: '15px',
+    fontWeight: '500',
+    color: '#5A6E26',
+    borderBottom: '1px solid rgba(166, 142, 122, 0.08)',
+  },
+  exportTdName: {
+    fontWeight: '700',
+    color: '#5A6E26',
+  },
+  exportTdPrice: {
+    fontWeight: '800',
+    color: '#7A2F2F',
   },
 
   // ============ МОДАЛЬНОЕ ОКНО — Новый дизайн ============
