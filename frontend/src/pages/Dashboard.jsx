@@ -24,6 +24,13 @@ function Dashboard() {
   const [isEditSubmitHovered, setIsEditSubmitHovered] = useState(false);
   const [isEditCancelHovered, setIsEditCancelHovered] = useState(false);
 
+  // Состояния для настроек
+  const [profile, setProfile] = useState(null);
+  const [settingsMsg, setSettingsMsg] = useState(null); // { type: 'success'|'error', text: '' }
+  const [emailForm, setEmailForm] = useState({ new_email: '', password: '' });
+  const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirmPassword: '' });
+  const [telegramId, setTelegramId] = useState('');
+
   // Обработка 401 ошибок — автоматический редирект на логин
   const handle401 = () => {
     localStorage.removeItem('token');
@@ -48,9 +55,138 @@ function Dashboard() {
     }
   };
 
+  // Загрузка профиля для настроек
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { handle401(); return; }
+      const response = await fetch('http://localhost:8000/api/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.status === 401) { handle401(); return; }
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Profile fetch error:', error);
+    }
+  };
+
   useEffect(() => {
     fetchSubscriptions();
   }, []);
+
+  // Подгружаем профиль при переключении на настройки
+  useEffect(() => {
+    if (activeTab === 'nastaveni') {
+      fetchProfile();
+    }
+  }, [activeTab]);
+
+  // Auto-hide toast
+  useEffect(() => {
+    if (settingsMsg) {
+      const timer = setTimeout(() => setSettingsMsg(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [settingsMsg]);
+
+  // Обработчики настроек
+  const handleChangeEmail = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { handle401(); return; }
+      const response = await fetch('http://localhost:8000/api/me/email', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(emailForm)
+      });
+      if (response.status === 401) { handle401(); return; }
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('token', data.access_token);
+        setProfile(prev => ({ ...prev, email: data.email }));
+        setEmailForm({ new_email: '', password: '' });
+        setSettingsMsg({ type: 'success', text: 'E-mail úspěšně změněn' });
+      } else {
+        setSettingsMsg({ type: 'error', text: data.detail || 'Chyba při změně e-mailu' });
+      }
+    } catch (error) {
+      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.new_password !== passwordForm.confirmPassword) {
+      setSettingsMsg({ type: 'error', text: 'Hesla se neshodují' });
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { handle401(); return; }
+      const response = await fetch('http://localhost:8000/api/me/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ current_password: passwordForm.current_password, new_password: passwordForm.new_password })
+      });
+      if (response.status === 401) { handle401(); return; }
+      const data = await response.json();
+      if (response.ok) {
+        setPasswordForm({ current_password: '', new_password: '', confirmPassword: '' });
+        setSettingsMsg({ type: 'success', text: 'Heslo úspěšně změněno' });
+      } else {
+        setSettingsMsg({ type: 'error', text: data.detail || 'Chyba při změně hesla' });
+      }
+    } catch (error) {
+      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+    }
+  };
+
+  const handleLinkTelegram = async (e) => {
+    e.preventDefault();
+    if (!telegramId.trim()) return;
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { handle401(); return; }
+      const response = await fetch('http://localhost:8000/api/me/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ telegram_chat_id: telegramId.trim() })
+      });
+      if (response.status === 401) { handle401(); return; }
+      const data = await response.json();
+      if (response.ok) {
+        setProfile(prev => ({ ...prev, telegram_chat_id: data.telegram_chat_id }));
+        setTelegramId('');
+        setSettingsMsg({ type: 'success', text: 'Telegram úspěšně propojen' });
+      } else {
+        setSettingsMsg({ type: 'error', text: data.detail || 'Chyba' });
+      }
+    } catch (error) {
+      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+    }
+  };
+
+  const handleUnlinkTelegram = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { handle401(); return; }
+      const response = await fetch('http://localhost:8000/api/me/telegram', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.status === 401) { handle401(); return; }
+      if (response.ok) {
+        setProfile(prev => ({ ...prev, telegram_chat_id: null }));
+        setSettingsMsg({ type: 'success', text: 'Telegram odpojen' });
+      }
+    } catch (error) {
+      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+    }
+  };
 
   const totalMonthly = subscriptions.reduce((sum, sub) => sum + sub.price, 0);
 
@@ -412,11 +548,162 @@ function Dashboard() {
           </>
         )}
 
-        {/* Заглушки для остальных вкладок */}
+        {/* Вкладка: Nastavení */}
         {activeTab === 'nastaveni' && (
-          <header style={styles.header}>
-            <h2 style={styles.pageTitle}>Nastavení</h2>
-          </header>
+          <>
+            <header style={styles.header}>
+              <h2 style={styles.pageTitle}>Nastavení</h2>
+            </header>
+
+            {/* Toast уведомление */}
+            {settingsMsg && (
+              <div style={{
+                ...styles.settingsToast,
+                backgroundColor: settingsMsg.type === 'success' ? '#5A6E26' : '#7A2F2F',
+              }}>
+                <span style={{ marginRight: '8px' }}>{settingsMsg.type === 'success' ? '✅' : '❌'}</span>
+                {settingsMsg.text}
+              </div>
+            )}
+
+            {/* Секция 1: Профиль */}
+            <div style={styles.settingsCard}>
+              <div style={styles.settingsCardHeader}>
+                <span style={styles.settingsCardIcon}>👤</span>
+                <h3 style={styles.settingsCardTitle}>Profil uživatele</h3>
+              </div>
+              <div style={styles.settingsProfileGrid}>
+                <div style={styles.settingsProfileItem}>
+                  <span style={styles.settingsProfileLabel}>Přezdívka</span>
+                  <span style={styles.settingsProfileValue}>{profile?.username || '—'}</span>
+                </div>
+                <div style={styles.settingsProfileItem}>
+                  <span style={styles.settingsProfileLabel}>E-mail</span>
+                  <span style={styles.settingsProfileValue}>{profile?.email || '—'}</span>
+                </div>
+                <div style={styles.settingsProfileItem}>
+                  <span style={styles.settingsProfileLabel}>Telegram</span>
+                  <span style={{
+                    ...styles.settingsProfileValue,
+                    color: profile?.telegram_chat_id ? '#5A6E26' : '#A68E7A',
+                  }}>
+                    {profile?.telegram_chat_id ? `✅ Propojen (${profile.telegram_chat_id})` : '⚪ Nepropojen'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Секция 2: Две формы рядом */}
+            <div style={styles.settingsFormsRow}>
+              {/* Смена email */}
+              <div style={styles.settingsCard}>
+                <div style={styles.settingsCardHeader}>
+                  <span style={styles.settingsCardIcon}>📧</span>
+                  <h3 style={styles.settingsCardTitle}>Změna e-mailu</h3>
+                </div>
+                <form onSubmit={handleChangeEmail} style={styles.settingsForm}>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.fieldLabel}>
+                      <span style={styles.fieldIcon}>📨</span> Nový e-mail
+                    </label>
+                    <input
+                      type="email" required placeholder="novy@email.cz" style={styles.modalInput}
+                      value={emailForm.new_email}
+                      onChange={(e) => setEmailForm({ ...emailForm, new_email: e.target.value })}
+                    />
+                  </div>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.fieldLabel}>
+                      <span style={styles.fieldIcon}>🔒</span> Aktuální heslo
+                    </label>
+                    <input
+                      type="password" required placeholder="Pro ověření" style={styles.modalInput}
+                      value={emailForm.password}
+                      onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
+                    />
+                  </div>
+                  <button type="submit" style={styles.settingsSubmitBtn}>Změnit e-mail</button>
+                </form>
+              </div>
+
+              {/* Смена пароля */}
+              <div style={styles.settingsCard}>
+                <div style={styles.settingsCardHeader}>
+                  <span style={styles.settingsCardIcon}>🔑</span>
+                  <h3 style={styles.settingsCardTitle}>Změna hesla</h3>
+                </div>
+                <form onSubmit={handleChangePassword} style={styles.settingsForm}>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.fieldLabel}>
+                      <span style={styles.fieldIcon}>🔒</span> Aktuální heslo
+                    </label>
+                    <input
+                      type="password" required placeholder="Současné heslo" style={styles.modalInput}
+                      value={passwordForm.current_password}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                    />
+                  </div>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.fieldLabel}>
+                      <span style={styles.fieldIcon}>🆕</span> Nové heslo
+                    </label>
+                    <input
+                      type="password" required placeholder="Min. 8 znaků, velké písmeno, číslo" style={styles.modalInput}
+                      value={passwordForm.new_password}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                    />
+                  </div>
+                  <div style={styles.fieldGroup}>
+                    <label style={styles.fieldLabel}>
+                      <span style={styles.fieldIcon}>🔄</span> Potvrzení hesla
+                    </label>
+                    <input
+                      type="password" required placeholder="Zopakujte nové heslo" style={styles.modalInput}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    />
+                  </div>
+                  <button type="submit" style={styles.settingsSubmitBtn}>Změnit heslo</button>
+                </form>
+              </div>
+            </div>
+
+            {/* Секция 3: Telegram */}
+            <div style={styles.settingsCard}>
+              <div style={styles.settingsCardHeader}>
+                <span style={styles.settingsCardIcon}>🤖</span>
+                <h3 style={styles.settingsCardTitle}>Telegram Bot</h3>
+              </div>
+              <p style={styles.settingsTelegramDesc}>
+                Propojte svůj účet s Telegram botem pro automatická upozornění na blížící se platby.
+              </p>
+
+              {profile?.telegram_chat_id ? (
+                <div style={styles.settingsTelegramLinked}>
+                  <div style={styles.settingsTelegramStatus}>
+                    <span style={styles.settingsTelegramDot} />
+                    <span style={styles.settingsTelegramStatusText}>Propojen: <strong>{profile.telegram_chat_id}</strong></span>
+                  </div>
+                  <button onClick={handleUnlinkTelegram} style={styles.settingsUnlinkBtn}>Odpojit Telegram</button>
+                </div>
+              ) : (
+                <form onSubmit={handleLinkTelegram} style={styles.settingsTelegramForm}>
+                  <div style={styles.settingsTelegramInputRow}>
+                    <input
+                      type="text" required placeholder="Váš Telegram Chat ID"
+                      style={{ ...styles.modalInput, flex: 1 }}
+                      value={telegramId}
+                      onChange={(e) => setTelegramId(e.target.value)}
+                    />
+                    <button type="submit" style={styles.settingsSubmitBtn}>Propojit</button>
+                  </div>
+                  <p style={styles.settingsTelegramHint}>
+                    💡 Chat ID získáte tak, že napíšete našemu botu na Telegram příkaz <strong>/start</strong>
+                  </p>
+                </form>
+              )}
+            </div>
+          </>
         )}
         
         {activeTab === 'export' && (
@@ -1312,6 +1599,163 @@ const styles = {
     backgroundColor: '#8B3636',
     transform: 'translateY(-1px)',
     boxShadow: '0 6px 20px rgba(122, 47, 47, 0.35)',
+  },
+
+  // ============ СТИЛИ ДЛЯ НАСТРОЕК ============
+  settingsToast: {
+    padding: '14px 24px',
+    borderRadius: '14px',
+    color: '#FFFCF8',
+    fontWeight: '700',
+    fontSize: '15px',
+    marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+    animation: 'slideUp 0.3s ease-out',
+  },
+  settingsCard: {
+    backgroundColor: '#FFFFFF',
+    padding: '28px',
+    borderRadius: '20px',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+    marginBottom: '24px',
+  },
+  settingsCardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '20px',
+    paddingBottom: '16px',
+    borderBottom: '1px solid rgba(166,142,122,0.15)',
+  },
+  settingsCardIcon: {
+    fontSize: '28px',
+    width: '48px',
+    height: '48px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F9F6F0',
+    borderRadius: '14px',
+    flexShrink: 0,
+  },
+  settingsCardTitle: {
+    color: '#7A2F2F',
+    fontSize: '20px',
+    fontWeight: '800',
+    margin: 0,
+  },
+  settingsProfileGrid: {
+    display: 'flex',
+    gap: '20px',
+  },
+  settingsProfileItem: {
+    flex: 1,
+    padding: '16px 20px',
+    backgroundColor: '#F9F6F0',
+    borderRadius: '14px',
+    border: '1px solid rgba(166,142,122,0.1)',
+  },
+  settingsProfileLabel: {
+    display: 'block',
+    color: '#A68E7A',
+    fontSize: '12px',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    marginBottom: '6px',
+  },
+  settingsProfileValue: {
+    display: 'block',
+    color: '#5A6E26',
+    fontSize: '16px',
+    fontWeight: '700',
+  },
+  settingsFormsRow: {
+    display: 'flex',
+    gap: '24px',
+  },
+  settingsForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  settingsSubmitBtn: {
+    backgroundColor: '#7A2F2F',
+    color: '#FFFCF8',
+    border: 'none',
+    padding: '14px 28px',
+    borderRadius: '14px',
+    fontSize: '15px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    fontFamily: 'Montserrat, sans-serif',
+    boxShadow: '0 4px 15px rgba(122, 47, 47, 0.25)',
+    transition: 'all 0.2s ease',
+    marginTop: '4px',
+  },
+  settingsTelegramDesc: {
+    color: '#A68E7A',
+    fontSize: '15px',
+    fontWeight: '500',
+    margin: '0 0 20px 0',
+    lineHeight: '1.5',
+  },
+  settingsTelegramLinked: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '16px 20px',
+    backgroundColor: 'rgba(90, 110, 38, 0.06)',
+    borderRadius: '14px',
+    border: '1px solid rgba(90, 110, 38, 0.12)',
+  },
+  settingsTelegramStatus: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  settingsTelegramDot: {
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    backgroundColor: '#5A6E26',
+    boxShadow: '0 0 8px rgba(90, 110, 38, 0.4)',
+  },
+  settingsTelegramStatusText: {
+    color: '#5A6E26',
+    fontSize: '15px',
+    fontWeight: '600',
+  },
+  settingsUnlinkBtn: {
+    backgroundColor: 'transparent',
+    color: '#7A2F2F',
+    border: '2px solid rgba(122, 47, 47, 0.25)',
+    padding: '10px 20px',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    fontFamily: 'Montserrat, sans-serif',
+    transition: 'all 0.2s ease',
+  },
+  settingsTelegramForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  settingsTelegramInputRow: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'flex-start',
+  },
+  settingsTelegramHint: {
+    color: '#A68E7A',
+    fontSize: '13px',
+    fontWeight: '500',
+    margin: 0,
+    fontStyle: 'italic',
   },
 };
 

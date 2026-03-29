@@ -9,6 +9,7 @@ class User(Base):
     username = Column(String, unique=True, index=True) # Вот она!
     email = Column(String, unique=True, index=True)
     password = Column(String)
+    telegram_chat_id = Column(String, nullable=True, default=None)
 
     subscriptions = relationship("Subscription", back_populates="owner")
 

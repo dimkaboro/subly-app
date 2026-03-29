@@ -17,11 +17,11 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_password(cls, v):
         if len(v) < 8:
-            raise ValueError('Heslo musí mít alespoň 8 znaků') # Минимум 8 символов
+            raise ValueError('Heslo musí mít alespoň 8 znaků')
         if not re.search(r'[A-Z]', v):
-            raise ValueError('Heslo musí obsahovat alespoň jedno velké písmeno') # Хотя бы одна заглавная буква
+            raise ValueError('Heslo musí obsahovat alespoň jedno velké písmeno')
         if not re.search(r'\d', v):
-            raise ValueError('Heslo musí obsahovat alespoň jednu číslici') # Хотя бы одна цифра
+            raise ValueError('Heslo musí obsahovat alespoň jednu číslici')
         return v
 
     @model_validator(mode='after')
@@ -61,3 +61,34 @@ class SubscriptionResponse(SubscriptionBase):
 
     class Config:
         from_attributes = True
+
+# ---СХЕМЫ ДЛЯ НАСТРОЕК---
+class UserProfileResponse(BaseModel):
+    username: str
+    email: EmailStr
+    telegram_chat_id: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class ChangeEmail(BaseModel):
+    new_email: EmailStr
+    password: str
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Heslo musí mít alespoň 8 znaků')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Heslo musí obsahovat alespoň jedno velké písmeno')
+        if not re.search(r'\d', v):
+            raise ValueError('Heslo musí obsahovat alespoň jednu číslici')
+        return v
+
+class TelegramLink(BaseModel):
+    telegram_chat_id: str
