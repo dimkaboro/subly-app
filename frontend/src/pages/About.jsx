@@ -21,31 +21,43 @@ function About() {
           </p>
         </div>
 
-        {/* Карточки с преимуществами / ценностями */}
-        <div style={styles.cardsContainer}>
+        {/* Карточки с преимуществами / ценностями -> Zig-Zag Story */}
+        <div style={styles.storyContainer}>
           
-          <div style={styles.card}>
-            <div style={styles.iconWrapper}>🎯</div>
-            <h3 style={styles.cardTitle}>Naše mise</h3>
-            <p style={styles.cardText}>
-              Konec zbytečným výdajům. Chceme, abyste platili jen za to, co opravdu využíváte a milujete.
-            </p>
+          <div style={styles.storyRow}>
+            <div style={styles.storyIconWrapper}>
+              <span style={styles.storyEmoji}>🎯</span>
+            </div>
+            <div style={styles.storyContent}>
+              <h3 style={styles.storyTitle}>Naše mise</h3>
+              <p style={styles.storyText}>
+                Konec zbytečným výdajům. Chceme, abyste platili jen za to, co opravdu využíváte a milujete.
+              </p>
+            </div>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.iconWrapper}>💡</div>
-            <h3 style={styles.cardTitle}>Jednoduchost</h3>
-            <p style={styles.cardText}>
-              Žádné složité tabulky. Čistý a intuitivní design, ve kterém se zorientujete za pár vteřin.
-            </p>
+          <div style={styles.storyRowReverse}>
+            <div style={styles.storyIconWrapper}>
+              <span style={styles.storyEmoji}>💡</span>
+            </div>
+            <div style={styles.storyContent}>
+              <h3 style={styles.storyTitle}>Jednoduchost</h3>
+              <p style={styles.storyText}>
+                Žádné složité tabulky. Čistý a intuitivní design, ve kterém se zorientujete za pár vteřin.
+              </p>
+            </div>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.iconWrapper}>🔒</div>
-            <h3 style={styles.cardTitle}>Bezpečnost</h3>
-            <p style={styles.cardText}>
-              Vaše soukromí je pro nás prioritou. Data jsou u nás chráněna pomocí nejmodernějších standardů.
-            </p>
+          <div style={styles.storyRow}>
+            <div style={styles.storyIconWrapper}>
+              <span style={styles.storyEmoji}>🔒</span>
+            </div>
+            <div style={styles.storyContent}>
+              <h3 style={styles.storyTitle}>Bezpečnost</h3>
+              <p style={styles.storyText}>
+                Vaše soukromí je pro nás prioritou. Data jsou u nás chráněna pomocí nejmodernějších standardů.
+              </p>
+            </div>
           </div>
 
         </div>
@@ -121,46 +133,63 @@ const styles = {
     lineHeight: '1.6',
   },
 
-  cardsContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: '40px',
-    width: '100%',
-    justifyContent: 'center',
-    marginBottom: '70px',
-    flexWrap: 'wrap', 
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: '40px',
-    padding: '40px 30px',
-    flex: '1',
-    minWidth: '300px',
-    maxWidth: '400px',
+  storyContainer: {
     display: 'flex',
     flexDirection: 'column',
+    gap: '50px',
+    width: '100%',
+    maxWidth: '1000px',
+    marginBottom: '80px',
+  },
+  storyRow: {
+    display: 'flex',
+    flexDirection: 'row',
     alignItems: 'center',
-    textAlign: 'center',
+    gap: '60px',
+    backgroundColor: colors.white,
+    borderRadius: '40px',
+    padding: '40px 60px',
     boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
-    transition: 'transform 0.3s ease',
   },
-  iconWrapper: {
-    fontSize: '48px',
-    marginBottom: '20px',
+  storyRowReverse: {
+    display: 'flex',
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: '60px',
+    backgroundColor: colors.white,
+    borderRadius: '40px',
+    padding: '40px 60px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
   },
-  cardTitle: {
-    fontSize: '28px',
+  storyIconWrapper: {
+    flexShrink: 0,
+    width: '140px',
+    height: '140px',
+    backgroundColor: 'rgba(82, 111, 31, 0.08)',
+    borderRadius: '50%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  storyEmoji: {
+    fontSize: '64px',
+  },
+  storyContent: {
+    flex: 1,
+    textAlign: 'left',
+  },
+  storyTitle: {
+    fontSize: '32px',
     fontWeight: '800',
     color: colors.deepRed,
     marginBottom: '15px',
   },
-  cardText: {
-    fontSize: '18px',
+  storyText: {
+    fontSize: '19px',
     fontWeight: '500',
     color: colors.darkText,
-    lineHeight: '1.5',
+    lineHeight: '1.6',
   },
-
   actionButtonContainer: {
     backgroundColor: colors.oliveGreen,
     borderRadius: '50px',

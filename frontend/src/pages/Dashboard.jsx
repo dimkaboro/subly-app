@@ -30,6 +30,13 @@ function Dashboard() {
   const [emailForm, setEmailForm] = useState({ new_email: '', password: '' });
   const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirmPassword: '' });
   const [telegramId, setTelegramId] = useState('');
+  const [showPasswordRules, setShowPasswordRules] = useState(false);
+
+  // ДИНАМИЧЕСКИЕ ПРАВИЛА ПАРОЛЯ ДЛЯ НАСТРОЕК
+  const hasMinLength = passwordForm.new_password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(passwordForm.new_password);
+  const hasNumber = /\d/.test(passwordForm.new_password);
+  const isPasswordValid = hasMinLength && hasUpperCase && hasNumber;
 
   // Обработка 401 ошибок — автоматический редирект на логин
   const handle401 = () => {
@@ -120,6 +127,10 @@ function Dashboard() {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    if (!isPasswordValid) {
+      setSettingsMsg({ type: 'error', text: 'Heslo nesplňuje všechny požadované podmínky (minimum 8 znaků, 1 velké písmeno, 1 číslice)' });
+      return;
+    }
     if (passwordForm.new_password !== passwordForm.confirmPassword) {
       setSettingsMsg({ type: 'error', text: 'Hesla se neshodují' });
       return;
@@ -312,6 +323,14 @@ function Dashboard() {
     }
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Dobré ráno,';
+    if (hour >= 12 && hour < 18) return 'Dobrý den,';
+    return 'Dobrý večer,';
+  };
+  const currentUsername = profile?.username || localStorage.getItem('username') || 'uživateli';
+
   // Элементы бокового меню
   const navItems = [
     { id: 'prehled', icon: '📊', label: 'Přehled' },
@@ -326,7 +345,14 @@ function Dashboard() {
       {/* ЛЕВАЯ ПАНЕЛЬ (SIDEBAR) */}
       <aside style={styles.sidebar}>
         <div style={styles.logoArea}>
-          <h1 style={{ color: '#EFE3D7', fontSize: '32px', fontWeight: '800' }}>Subly</h1>
+          <h1 style={{ color: '#EFE3D7', fontSize: '34px', fontWeight: '800', margin: '0 0 25px 0' }}>Subly</h1>
+          
+          <div style={styles.separator} />
+          
+          <div style={styles.greetingBox}>
+            <div style={styles.greetingTime}>{getGreeting()}</div>
+            <div style={styles.greetingName}>{currentUsername}</div>
+          </div>
         </div>
 
         <nav style={styles.nav}>
@@ -651,7 +677,24 @@ function Dashboard() {
                       type="password" required placeholder="Min. 8 znaků, velké písmeno, číslo" style={styles.modalInput}
                       value={passwordForm.new_password}
                       onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                      onFocus={() => setShowPasswordRules(true)}
+                      onBlur={() => setShowPasswordRules(false)}
                     />
+                    {showPasswordRules && (
+                      <div style={styles.passwordRulesContainer}>
+                        <ul style={styles.passwordRulesList}>
+                          <li style={{ color: hasMinLength ? '#5A6E26' : '#7A2F2F', transition: 'color 0.2s' }}>
+                            Minimálně 8 znaků
+                          </li>
+                          <li style={{ color: hasUpperCase ? '#5A6E26' : '#7A2F2F', transition: 'color 0.2s' }}>
+                            Alespoň 1 velké písmeno
+                          </li>
+                          <li style={{ color: hasNumber ? '#5A6E26' : '#7A2F2F', transition: 'color 0.2s' }}>
+                            Alespoň 1 číslice
+                          </li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                   <div style={styles.fieldGroup}>
                     <label style={styles.fieldLabel}>
@@ -1017,8 +1060,32 @@ const styles = {
     zIndex: 10,
   },
   logoArea: {
-    marginBottom: '40px',
+    marginBottom: '35px',
     textAlign: 'center',
+  },
+  separator: {
+    height: '1px',
+    backgroundColor: 'rgba(239, 227, 215, 0.2)',
+    width: '100%',
+    marginBottom: '20px',
+  },
+  greetingBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  greetingTime: {
+    color: '#EFE3D7',
+    fontSize: '13px',
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  greetingName: {
+    color: '#EFE3D7',
+    fontSize: '17px',
+    fontWeight: '800',
+    letterSpacing: '0.5px',
   },
   nav: {
     display: 'flex',
@@ -1756,6 +1823,22 @@ const styles = {
     fontWeight: '500',
     margin: 0,
     fontStyle: 'italic',
+  },
+  passwordRulesContainer: {
+    width: '100%',
+    padding: '8px 10px 0',
+    color: '#7A2F2F',
+    fontSize: '13px',
+    textAlign: 'left',
+    opacity: 0.9,
+    fontWeight: '600',
+  },
+  passwordRulesList: {
+    margin: 0,
+    paddingLeft: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '3px',
   },
 };
 

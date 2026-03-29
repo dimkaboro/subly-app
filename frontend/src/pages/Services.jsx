@@ -18,34 +18,43 @@ function Services() {
           </p>
         </div>
 
-        {/* Карточки услуг */}
-        <div style={styles.cardsContainer}>
+        {/* Карточки услуг -> Horizontal Feature Blocks */}
+        <div style={styles.servicesContainer}>
           
-          <div style={styles.card}>
-            <div style={styles.iconWrapper}>💳</div>
-            <h3 style={styles.cardTitle}>Správa předplatných</h3>
-            <p style={styles.cardText}>
-              Mějte všechny své Netflixy, Spotify a další platby pod kontrolou. 
-              Upozorníme vás před každým stržením peněz.
-            </p>
+          <div style={styles.serviceBlock}>
+            <div style={styles.serviceWatermark}>01</div>
+            <div style={styles.serviceIcon}>💳</div>
+            <div style={styles.serviceContent}>
+              <h3 style={styles.serviceTitle}>Správa předplatných</h3>
+              <p style={styles.serviceText}>
+                Mějte všechny své Netflixy, Spotify a další platby pod kontrolou. 
+                Upozorníme vás před každým stržením peněz.
+              </p>
+            </div>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.iconWrapper}>📊</div>
-            <h3 style={styles.cardTitle}>Chytrá analytika</h3>
-            <p style={styles.cardText}>
-              Přehledné grafy vám ukážou, kam mizí vaše peníze. 
-              Zjistěte, za jaké kategorie utrácíte nejvíce.
-            </p>
+          <div style={styles.serviceBlock}>
+            <div style={styles.serviceWatermark}>02</div>
+            <div style={styles.serviceIcon}>📊</div>
+            <div style={styles.serviceContent}>
+              <h3 style={styles.serviceTitle}>Chytrá analytika</h3>
+              <p style={styles.serviceText}>
+                Přehledné grafy vám ukážou, kam mizí vaše peníze. 
+                Zjistěte, za jaké kategorie utrácíte nejvíce.
+              </p>
+            </div>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.iconWrapper}>✂️</div>
-            <h3 style={styles.cardTitle}>Zrušení jedním klikem</h3>
-            <p style={styles.cardText}>
-              Platíte za něco, co už nepoužíváte? Zbavte se nechtěných 
-              předplatných snadno a rychle přímo z naší aplikace.
-            </p>
+          <div style={styles.serviceBlock}>
+            <div style={styles.serviceWatermark}>03</div>
+            <div style={styles.serviceIcon}>📥</div>
+            <div style={styles.serviceContent}>
+              <h3 style={styles.serviceTitle}>Snadný export dat</h3>
+              <p style={styles.serviceText}>
+                Potřebujete svá data pro domácí účetnictví? Jedním kliknutím 
+                exportujte kompletní přehled svých předplatných do CSV pro Excel.
+              </p>
+            </div>
           </div>
 
         </div>
@@ -120,44 +129,64 @@ const styles = {
     lineHeight: '1.6',
   },
 
-  cardsContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: '40px',
-    width: '100%',
-    justifyContent: 'center',
-    marginBottom: '70px',
-    flexWrap: 'wrap', 
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: '40px',
-    padding: '40px 30px',
-    flex: '1',
-    minWidth: '300px',
-    maxWidth: '400px',
+  servicesContainer: {
     display: 'flex',
     flexDirection: 'column',
+    gap: '40px',
+    width: '100%',
+    maxWidth: '1000px',
+    marginBottom: '80px',
+  },
+  serviceBlock: {
+    position: 'relative',
+    backgroundColor: colors.white,
+    borderRadius: '40px',
+    padding: '40px 50px',
+    display: 'flex',
     alignItems: 'center',
-    textAlign: 'center',
+    gap: '40px',
     boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
-    transition: 'transform 0.3s ease',
+    overflow: 'hidden',
   },
-  iconWrapper: {
-    fontSize: '48px',
-    marginBottom: '20px',
+  serviceWatermark: {
+    position: 'absolute',
+    right: '30px',
+    bottom: '-30px',
+    fontSize: '200px',
+    fontWeight: '900',
+    color: 'rgba(104, 14, 14, 0.04)', // faint deepRed
+    lineHeight: '1',
+    pointerEvents: 'none',
+    userSelect: 'none',
   },
-  cardTitle: {
-    fontSize: '28px',
+  serviceIcon: {
+    fontSize: '64px',
+    flexShrink: 0,
+    backgroundColor: 'rgba(255, 237, 171, 0.5)', // bgBeige slightly transparent
+    width: '120px',
+    height: '120px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: '30px',
+    zIndex: 1,
+  },
+  serviceContent: {
+    flex: 1,
+    zIndex: 1,
+  },
+  serviceTitle: {
+    fontSize: '32px',
     fontWeight: '800',
     color: colors.deepRed,
     marginBottom: '15px',
   },
-  cardText: {
-    fontSize: '18px',
+  serviceText: {
+    fontSize: '19px',
     fontWeight: '500',
     color: colors.darkText,
-    lineHeight: '1.5',
+    lineHeight: '1.6',
+    maxWidth: '600px',
   },
 
   actionButtonContainer: {

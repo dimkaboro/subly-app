@@ -22,6 +22,13 @@ function Register() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // 👇 ДИНАМИЧЕСКИЕ ПРАВИЛА ПАРОЛЯ
+  const hasMinLength = formData.password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(formData.password);
+  const hasNumber = /\d/.test(formData.password);
+  const isPasswordValid = hasMinLength && hasUpperCase && hasNumber;
+
+
   // 👇 2. ОБРАБОТЧИК ВВОДА (сохраняет текст, когда ты печатаешь)
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,6 +44,17 @@ function Register() {
       setErrorMsg('Prosím, vyplňte všechna pole.');
       return;
     }
+
+    if (!isPasswordValid) {
+      setErrorMsg('Heslo nesplňuje všechny požadované podmínky (minimum 8 znaků, 1 velké písmeno, 1 číslice).');
+      return;
+    }
+
+    if (formData.password !== formData.repeat_password) {
+      setErrorMsg('Hesla se neshodují.');
+      return;
+    }
+
 
     try {
       const response = await fetch('http://localhost:8000/register', {
@@ -147,9 +165,15 @@ function Register() {
             {showRules && (
             <div style={styles.passwordRulesContainer}>
             <ul style={styles.passwordRulesList}>
-             <li>Minimálně 8 znaků</li>
-             <li>Alespoň 1 velké písmeno</li>
-             <li>Alespoň 1 číslice</li>
+             <li style={{ color: hasMinLength ? '#526F1F' : '#680E0E', transition: 'color 0.2s' }}>
+                Minimálně 8 znaků
+             </li>
+             <li style={{ color: hasUpperCase ? '#526F1F' : '#680E0E', transition: 'color 0.2s' }}>
+                Alespoň 1 velké písmeno
+             </li>
+             <li style={{ color: hasNumber ? '#526F1F' : '#680E0E', transition: 'color 0.2s' }}>
+                Alespoň 1 číslice
+             </li>
     </ul>
   </div>
 )}
