@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import characterVector from '../assets/registration-character.svg'; 
 import speechBubbleVector from '../assets/speech-bubble.svg';
+import { useLanguage } from '../context/LanguageContext';
 
 function Register() {
+  const { t } = useLanguage();
   const [showRules, setShowRules] = useState(false);
   
   const [isBtnHovered, setIsBtnHovered] = useState(false);
@@ -41,17 +43,17 @@ function Register() {
     setSuccessMsg('');
 
     if (!formData.username || !formData.email || !formData.password || !formData.repeat_password) {
-      setErrorMsg('Prosím, vyplňte všechna pole.');
+      setErrorMsg(t('register.errEmpty'));
       return;
     }
 
     if (!isPasswordValid) {
-      setErrorMsg('Heslo nesplňuje všechny požadované podmínky (minimum 8 znaků, 1 velké písmeno, 1 číslice).');
+      setErrorMsg(t('register.errWeakPwd'));
       return;
     }
 
     if (formData.password !== formData.repeat_password) {
-      setErrorMsg('Hesla se neshodují.');
+      setErrorMsg(t('register.errPwdMismatch'));
       return;
     }
 
@@ -74,10 +76,10 @@ function Register() {
           setErrorMsg(errorText.replace('Value error, ', '')); 
         } else {
           // Если это наша обычная ошибка 400 (просто текст)
-          setErrorMsg(data.detail || 'Něco se pokazilo');
+          setErrorMsg(data.detail || t('register.errGeneral'));
         }
       } else {
-        setSuccessMsg('Účet byl úspěšně vytvořen! Přesměrování...');
+        setSuccessMsg(t('register.success'));
         setFormData({ username: '', email: '', password: '', repeat_password: '' });
         
         // Переход на страницу логина через 2 секунды
@@ -86,7 +88,7 @@ function Register() {
         }, 2000);
       }
     } catch (error) {
-      setErrorMsg('Chyba připojení k serveru.');
+      setErrorMsg(t('register.errServer'));
     }
   };
 
@@ -123,7 +125,7 @@ function Register() {
           <div style={styles.speechBubbleContainer}>
             <img src={speechBubbleVector} alt="Speech bubble" style={styles.speechBubbleImage} />
             <p style={styles.speechBubbleText}>
-              Pomůžu ti udělat pořádek ve tvých předplatných. Jdeme na to?
+              {t('register.speechBubble')}
             </p>
           </div>
           <img src={characterVector} alt="Character" style={styles.characterImage} />
@@ -133,7 +135,7 @@ function Register() {
         <div style={styles.rightColumn}>
           
           {/* УМЕНЬШЕННЫЙ ЗАГОЛОВОК */}
-          <h1 style={styles.title}>Registrace</h1>
+          <h1 style={styles.title}>{t('register.title')}</h1>
 
           {/* 👇 СООБЩЕНИЯ ОБ ОШИБКЕ/УСПЕХЕ (стили прописаны прямо тут, чтобы не трогать твой низ файла) */}
           {errorMsg && (
@@ -151,28 +153,28 @@ function Register() {
           <form style={styles.form} onSubmit={handleSubmit}>
             <div style={styles.inputContainer}>
               {/* 👇 Добавлены name, value и onChange */}
-              <input type="text" name="username" value={formData.username} onChange={handleChange} placeholder="Přezdívka" style={styles.input} />
+              <input type="text" name="username" value={formData.username} onChange={handleChange} placeholder={t('register.phUsername')} style={styles.input} />
             </div>
             
             <div style={styles.inputContainer}>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="E-mail" style={styles.input} />
+              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder={t('register.phEmail')} style={styles.input} />
             </div>
 
-            <div style={styles.inputContainer}><input type="password" name="password" value={formData.password} onChange={handleChange} onFocus={() => setShowRules(true)} onBlur={() => setShowRules(false)} placeholder="Heslo" style={styles.input} /></div>
+            <div style={styles.inputContainer}><input type="password" name="password" value={formData.password} onChange={handleChange} onFocus={() => setShowRules(true)} onBlur={() => setShowRules(false)} placeholder={t('register.phPassword')} style={styles.input} /></div>
 
-            <div style={styles.inputContainer}><input type="password" name="repeat_password" value={formData.repeat_password} onChange={handleChange} onFocus={() => setShowRules(true)} onBlur={() => setShowRules(false)} placeholder="Zopakujte heslo" style={styles.input} /></div>
+            <div style={styles.inputContainer}><input type="password" name="repeat_password" value={formData.repeat_password} onChange={handleChange} onFocus={() => setShowRules(true)} onBlur={() => setShowRules(false)} placeholder={t('register.phRepeatPassword')} style={styles.input} /></div>
 
             {showRules && (
             <div style={styles.passwordRulesContainer}>
             <ul style={styles.passwordRulesList}>
              <li style={{ color: hasMinLength ? '#526F1F' : '#680E0E', transition: 'color 0.2s' }}>
-                Minimálně 8 znaků
+                {t('register.ruleLen')}
              </li>
              <li style={{ color: hasUpperCase ? '#526F1F' : '#680E0E', transition: 'color 0.2s' }}>
-                Alespoň 1 velké písmeno
+                {t('register.ruleUpper')}
              </li>
              <li style={{ color: hasNumber ? '#526F1F' : '#680E0E', transition: 'color 0.2s' }}>
-                Alespoň 1 číslice
+                {t('register.ruleNum')}
              </li>
     </ul>
   </div>
@@ -192,7 +194,7 @@ function Register() {
           >
             {/* 👇 Добавлен type="submit" */}
             <button type="submit" style={styles.nextButton}>
-              Dále
+              {t('register.nextBtn')}
             </button>
           </div>
 

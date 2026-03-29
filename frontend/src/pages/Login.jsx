@@ -2,8 +2,10 @@ import React, { useState } from 'react'; // 👇 1. Добавили useState
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.svg';
 import loginVector from '../assets/login-vector.svg'; 
+import { useLanguage } from '../context/LanguageContext';
 
 function Login() {
+  const { t } = useLanguage();
   // 👇 2. Создаем "переключатели" для наведения мыши
   const [isLinkHovered, setIsLinkHovered] = useState(false);
   const [isBtnHovered, setIsBtnHovered] = useState(false);
@@ -47,7 +49,7 @@ function Login() {
         if (Array.isArray(rawError)) {
           setErrorMsg(rawError[0].msg);
         } else {
-          setErrorMsg(rawError || 'Nesprávný e-mail nebo heslo');
+          setErrorMsg(rawError || t('login.errWrongCreds'));
         }
       } else {
         localStorage.setItem('token', data.access_token);
@@ -55,7 +57,7 @@ function Login() {
         navigate('/dashboard');
       }
     } catch (error) {
-      setErrorMsg('Chyba připojení к serveru');
+      setErrorMsg(t('login.errServer'));
     }
   };
 
@@ -101,7 +103,7 @@ function Login() {
               name="email" // Добавили имя
               value={formData.email} // Привязали значение
               onChange={handleChange} // Привязали ввод
-              placeholder="E-mail" 
+              placeholder={t('login.phEmail')} 
               style={styles.input} 
               required
             />
@@ -113,7 +115,7 @@ function Login() {
               name="password" // Добавили имя
               value={formData.password} // Привязали значение
               onChange={handleChange} // Привязали ввод
-              placeholder="Heslo" 
+              placeholder={t('login.phPassword')} 
               style={styles.input} 
               required
             />
@@ -128,7 +130,7 @@ function Login() {
   onMouseEnter={() => setIsForgotHovered(true)}
   onMouseLeave={() => setIsForgotHovered(false)}
 >
-  Zapomněli jste přezdívku nebo heslo?
+  {t('login.forgotHeader')}
 </Link>
 
 </form> 
@@ -143,7 +145,7 @@ function Login() {
             onMouseEnter={() => setIsLinkHovered(true)}
             onMouseLeave={() => setIsLinkHovered(false)}
           >
-            Vytvořit účet
+            {t('login.createAccount')}
           </Link>
 
           <div 
@@ -156,7 +158,7 @@ function Login() {
             onClick={handleSubmit} // 👇 ПРИВЯЗАЛИ КЛИК
           >
             <button type="submit" style={styles.nextButton}>
-              Dále
+              {t('login.nextBtn')}
             </button>
           </div>
         </div>

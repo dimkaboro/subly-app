@@ -1,18 +1,15 @@
 import React from 'react';
 import manImage from '../assets/man.png';
-// 👇 Импортируем звезды
 import starTopLeft from '../assets/star-top-left.svg';
 import starTopRight from '../assets/star-top-right.svg';
 import starBottomLeft from '../assets/star-bottom-left.svg';
-
-// 👇 Импортируем инструменты навигации
 import { useNavigate, Link } from 'react-router-dom';
-
 import { FaEnvelope, FaInstagram, FaFacebookF } from 'react-icons/fa';
+import { useLanguage } from '../context/LanguageContext';
 
 function Hero() {
-
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <section style={styles.section}>
@@ -46,11 +43,11 @@ function Hero() {
         <div style={styles.rightContent}>
           
           <h1 style={styles.mainText}>
-            Žijí tvoje předplatná <br />
-            vlastním životem? <br />
-            S námi budou <br />
-            <span style={styles.highlight}>vždy pod kontrolou</span> — <br />
-            tak to rychle zkus!
+            {t('hero.line1')} <br />
+            {t('hero.line2')} <br />
+            {t('hero.line3')} <br />
+            <span style={styles.highlight}>{t('hero.line4Highlight')}</span> <br />
+            {t('hero.line5')}
           </h1>
 
 
@@ -58,14 +55,13 @@ function Hero() {
             style={styles.button} 
             onClick={() => navigate('/register')}
           >
-            Registrovat se
+            {t('hero.registerBtn')}
           </button>
 
-          {/* 👇 ИСПРАВЛЕНИЕ ЗДЕСЬ: Используем Link вместо strong */}
           <p style={styles.loginText}>
-            Máte už účet?{' '}
+            {t('hero.haveAccount')}{' '}
             <Link to="/login" style={styles.linkBold}>
-              Přihlaste se.
+              {t('hero.loginLink')}
             </Link>
           </p>
 

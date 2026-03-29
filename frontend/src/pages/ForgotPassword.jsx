@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.svg';
+import { useLanguage } from '../context/LanguageContext';
 
 function ForgotPassword() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // Состояния для данных
   const [email, setEmail] = useState('');
@@ -22,7 +24,7 @@ function ForgotPassword() {
   const handleRequestCode = (e) => {
     e.preventDefault();
     if (!email) {
-      setErrorMsg('Zadejte prosím svůj e-mail');
+      setErrorMsg(t('forgot.errNoEmail'));
       return;
     }
     setErrorMsg('');
@@ -38,7 +40,7 @@ function ForgotPassword() {
   const handleResetPassword = (e) => {
     e.preventDefault();
     if (!code || !newPassword) {
-      setErrorMsg('Vyplňte prosím všechna pole');
+      setErrorMsg(t('forgot.errEmpty'));
       return;
     }
     setErrorMsg('');
@@ -78,7 +80,7 @@ function ForgotPassword() {
           <img src={logo} alt="Subly Logo" style={styles.logo} />
         </div>
 
-        <h2 style={styles.title}>Obnova hesla</h2>
+        <h2 style={styles.title}>{t('forgot.title')}</h2>
         
         {/* Блок для показа ошибок (если они есть) */}
         {errorMsg && (
@@ -91,7 +93,7 @@ function ForgotPassword() {
         {step === 1 && (
           <>
             <p style={styles.subtitle}>
-              Zadejte svůj e-mail. Kód pro obnovení vám zašleme do našeho Telegram bota.
+              {t('forgot.subStep1')}
             </p>
 
             <form style={styles.form} onSubmit={handleRequestCode}>
@@ -100,7 +102,7 @@ function ForgotPassword() {
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="E-mail" 
+                  placeholder={t('forgot.phEmail')} 
                   style={styles.input} 
                   required
                 />
@@ -116,7 +118,7 @@ function ForgotPassword() {
                 onClick={handleRequestCode}
               >
                 <button type="submit" style={styles.button}>
-                  Získat kód
+                  {t('forgot.btnStep1')}
                 </button>
               </div>
             </form>
@@ -127,7 +129,7 @@ function ForgotPassword() {
         {step === 2 && (
           <>
             <p style={styles.subtitle}>
-              Zadejte 6místný kód z Telegramu a vytvořte si nové heslo.
+              {t('forgot.subStep2')}
             </p>
 
             <form style={styles.form} onSubmit={handleResetPassword}>
@@ -136,7 +138,7 @@ function ForgotPassword() {
                   type="text" 
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="Kód z Telegramu" 
+                  placeholder={t('forgot.phCode')} 
                   style={styles.input} 
                   required
                 />
@@ -147,7 +149,7 @@ function ForgotPassword() {
                   type="password" 
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Nové heslo" 
+                  placeholder={t('forgot.phNewPassword')} 
                   style={styles.input} 
                   required
                 />
@@ -163,7 +165,7 @@ function ForgotPassword() {
                 onClick={handleResetPassword}
               >
                 <button type="submit" style={styles.button}>
-                  Uložit nové heslo
+                  {t('forgot.btnStep2')}
                 </button>
               </div>
             </form>
@@ -174,13 +176,13 @@ function ForgotPassword() {
         {step === 3 && (
           <div style={styles.successMessage}>
             <p style={{ marginBottom: '15px' }}>
-              Vaše heslo bylo úspěšně změněno! Nyní se můžete přihlásit.
+              {t('forgot.subStep3')}
             </p>
             <Link 
               to="/login" 
               style={{ color: '#EFE3D7', fontWeight: 'bold', textDecoration: 'underline' }}
             >
-              Zpět na přihlášení
+              {t('forgot.backToLogin')}
             </Link>
           </div>
         )}

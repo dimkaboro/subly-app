@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, CartesianGrid } from 'recharts';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSwitcher from '../components/LanguageSwitcher'; // Добавили LanguageSwitcher
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // Состояния для меню
   const [hoveredNav, setHoveredNav] = useState(null);
@@ -116,23 +119,23 @@ function Dashboard() {
         localStorage.setItem('token', data.access_token);
         setProfile(prev => ({ ...prev, email: data.email }));
         setEmailForm({ new_email: '', password: '' });
-        setSettingsMsg({ type: 'success', text: 'E-mail úspěšně změněn' });
+        setSettingsMsg({ type: 'success', text: t('dashboard.msgEmailSuccess') });
       } else {
-        setSettingsMsg({ type: 'error', text: data.detail || 'Chyba při změně e-mailu' });
+        setSettingsMsg({ type: 'error', text: data.detail || 'Error' });
       }
     } catch (error) {
-      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+      setSettingsMsg({ type: 'error', text: t('dashboard.msgServerErr') });
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (!isPasswordValid) {
-      setSettingsMsg({ type: 'error', text: 'Heslo nesplňuje všechny požadované podmínky (minimum 8 znaků, 1 velké písmeno, 1 číslice)' });
+      setSettingsMsg({ type: 'error', text: t('dashboard.msgWeakPwd') });
       return;
     }
     if (passwordForm.new_password !== passwordForm.confirmPassword) {
-      setSettingsMsg({ type: 'error', text: 'Hesla se neshodují' });
+      setSettingsMsg({ type: 'error', text: t('dashboard.msgPwdMismatch') });
       return;
     }
     try {
@@ -147,12 +150,12 @@ function Dashboard() {
       const data = await response.json();
       if (response.ok) {
         setPasswordForm({ current_password: '', new_password: '', confirmPassword: '' });
-        setSettingsMsg({ type: 'success', text: 'Heslo úspěšně změněno' });
+        setSettingsMsg({ type: 'success', text: t('dashboard.msgPwdSuccess') });
       } else {
-        setSettingsMsg({ type: 'error', text: data.detail || 'Chyba při změně hesla' });
+        setSettingsMsg({ type: 'error', text: data.detail || 'Error' });
       }
     } catch (error) {
-      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+      setSettingsMsg({ type: 'error', text: t('dashboard.msgServerErr') });
     }
   };
 
@@ -172,12 +175,12 @@ function Dashboard() {
       if (response.ok) {
         setProfile(prev => ({ ...prev, telegram_chat_id: data.telegram_chat_id }));
         setTelegramId('');
-        setSettingsMsg({ type: 'success', text: 'Telegram úspěšně propojen' });
+        setSettingsMsg({ type: 'success', text: t('dashboard.msgTgSuccess') });
       } else {
-        setSettingsMsg({ type: 'error', text: data.detail || 'Chyba' });
+        setSettingsMsg({ type: 'error', text: data.detail || 'Error' });
       }
     } catch (error) {
-      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+      setSettingsMsg({ type: 'error', text: t('dashboard.msgServerErr') });
     }
   };
 
@@ -192,10 +195,10 @@ function Dashboard() {
       if (response.status === 401) { handle401(); return; }
       if (response.ok) {
         setProfile(prev => ({ ...prev, telegram_chat_id: null }));
-        setSettingsMsg({ type: 'success', text: 'Telegram odpojen' });
+        setSettingsMsg({ type: 'success', text: t('dashboard.msgTgUnlink') });
       }
     } catch (error) {
-      setSettingsMsg({ type: 'error', text: 'Chyba připojení k serveru' });
+      setSettingsMsg({ type: 'error', text: t('dashboard.msgServerErr') });
     }
   };
 
@@ -325,18 +328,18 @@ function Dashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'Dobré ráno,';
-    if (hour >= 12 && hour < 18) return 'Dobrý den,';
-    return 'Dobrý večer,';
+    if (hour >= 5 && hour < 12) return t('dashboard.greetingMorning');
+    if (hour >= 12 && hour < 18) return t('dashboard.greetingDay');
+    return t('dashboard.greetingEvening');
   };
-  const currentUsername = profile?.username || localStorage.getItem('username') || 'uživateli';
+  const currentUsername = profile?.username || localStorage.getItem('username') || '';
 
   // Элементы бокового меню
   const navItems = [
-    { id: 'prehled', icon: '📊', label: 'Přehled' },
-    { id: 'grafy', icon: '📈', label: 'Grafy' },
-    { id: 'nastaveni', icon: '⚙️', label: 'Nastavení' },
-    { id: 'export', icon: '📥', label: 'Export do CSV' }
+    { id: 'prehled', icon: '📊', label: t('dashboard.navPrehled') },
+    { id: 'grafy', icon: '📈', label: t('dashboard.navGrafy') },
+    { id: 'nastaveni', icon: '⚙️', label: t('dashboard.navNastaveni') },
+    { id: 'export', icon: '📥', label: t('dashboard.navExport') }
   ];
 
   return (
@@ -352,6 +355,10 @@ function Dashboard() {
           <div style={styles.greetingBox}>
             <div style={styles.greetingTime}>{getGreeting()}</div>
             <div style={styles.greetingName}>{currentUsername}</div>
+          </div>
+          
+          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+            <LanguageSwitcher color="#EFE3D7" />
           </div>
         </div>
 
@@ -378,7 +385,7 @@ function Dashboard() {
         </nav>
 
         <div style={styles.logoutBtn} onClick={handleLogout}>
-          Odhlásit se
+          {t('dashboard.logout')}
         </div>
       </aside>
 
@@ -389,18 +396,18 @@ function Dashboard() {
         {activeTab === 'prehled' && (
           <>
             <header style={styles.header}>
-              <h2 style={styles.pageTitle}>Můj přehled</h2>
-              <button style={styles.addButton} onClick={() => setShowAddModal(true)}>+ Přidat předplatné</button>
+              <h2 style={styles.pageTitle}>{t('dashboard.prehledTitle')}</h2>
+              <button style={styles.addButton} onClick={() => setShowAddModal(true)}>{t('dashboard.addBtn')}</button>
             </header>
 
             {/* Сводка (Summary Cards) */}
             <div style={styles.summaryGrid}>
               <div style={styles.summaryCard}>
-                <p style={styles.summaryLabel}>Celkové měsíční výdaje</p>
+                <p style={styles.summaryLabel}>{t('dashboard.totalMonthly')}</p>
                 <h3 style={styles.summaryValue}>{totalMonthly} CZK</h3>
               </div>
               <div style={styles.summaryCard}>
-                <p style={styles.summaryLabel}>Nejbližší platba</p>
+                <p style={styles.summaryLabel}>{t('dashboard.closestPayment')}</p>
                 {nextPaymentInfo ? (
                   <h3 style={styles.summaryValueHighlight}>
                     {nextPaymentInfo.name} ({nextPaymentInfo.formatted})
@@ -408,33 +415,33 @@ function Dashboard() {
                 ) : (
                   <div style={styles.emptyPaymentContainer}>
                     <span style={styles.emptyPaymentIcon}>📅</span>
-                    <p style={styles.emptyPaymentText}>Žádné platby</p>
-                    <p style={styles.emptyPaymentHint}>Přidejte svou první službu</p>
+                    <p style={styles.emptyPaymentText}>{t('dashboard.noPayments')}</p>
+                    <p style={styles.emptyPaymentHint}>{t('dashboard.noPaymentsHint')}</p>
                   </div>
                 )}
               </div>
               <div style={styles.summaryCard}>
-                <p style={styles.summaryLabel}>Aktivní předplatné</p>
+                <p style={styles.summaryLabel}>{t('dashboard.activeSubs')}</p>
                 <h3 style={styles.summaryValue}>{subscriptions.length}</h3>
               </div>
             </div>
 
             {/* Список подписок */}
             <div style={styles.listSection}>
-              <h3 style={styles.sectionTitle}>Aktivní služby</h3>
+              <h3 style={styles.sectionTitle}>{t('dashboard.activeServices')}</h3>
               <div style={styles.subsList}>
                 {subscriptions.length === 0 ? (
                   <div style={styles.emptyListContainer}>
                     <span style={styles.emptyListIcon}>🎯</span>
-                    <p style={styles.emptyListTitle}>Zatím nemáte žádné předplatné</p>
-                    <p style={styles.emptyListHint}>Klikněte na „+ Přidat předplatné" a začněte sledovat své výdaje</p>
+                    <p style={styles.emptyListTitle}>{t('dashboard.emptyListTitle')}</p>
+                    <p style={styles.emptyListHint}>{t('dashboard.emptyListHint')}</p>
                   </div>
                 ) : (
                   subscriptions.map((sub) => (
                     <div key={sub.id} style={styles.subCard}>
                       <div style={styles.subInfo}>
                         <h4 style={styles.subName}>{sub.name}</h4>
-                        <p style={styles.subDetails}>{sub.cycle} • Další platba: {sub.nextPayment}</p>
+                        <p style={styles.subDetails}>{sub.cycle === 'Měsíčně' ? t('dashboard.optMonth') : (sub.cycle === 'Ročně' ? t('dashboard.optYear') : sub.cycle)} • {t('dashboard.nextPaymentLabel')} {sub.nextPayment}</p>
                       </div>
                       <div style={styles.subPriceAction}>
                         <span style={styles.price}>{sub.price} {sub.currency}</span>
@@ -455,31 +462,31 @@ function Dashboard() {
         {activeTab === 'grafy' && (
           <>
             <header style={styles.header}>
-              <h2 style={styles.pageTitle}>Grafy výdajů</h2>
+              <h2 style={styles.pageTitle}>{t('dashboard.grafyTitle')}</h2>
             </header>
 
             {subscriptions.length === 0 ? (
               <div style={styles.chartEmptyState}>
                 <span style={{ fontSize: '64px' }}>📊</span>
-                <h3 style={{ color: '#7A2F2F', fontSize: '22px', fontWeight: '800', margin: '16px 0 8px' }}>Zatím žádná data</h3>
-                <p style={{ color: '#A68E7A', fontSize: '15px', fontWeight: '500' }}>Přidejte předplatné a uvidíte zde přehledné grafy</p>
+                <h3 style={{ color: '#7A2F2F', fontSize: '22px', fontWeight: '800', margin: '16px 0 8px' }}>{t('dashboard.chartEmptyTitle')}</h3>
+                <p style={{ color: '#A68E7A', fontSize: '15px', fontWeight: '500' }}>{t('dashboard.chartEmptyHint')}</p>
               </div>
             ) : (
               <>
                 {/* Statistiky nahoře */}
                 <div style={styles.summaryGrid}>
                   <div style={styles.summaryCard}>
-                    <p style={styles.summaryLabel}>Celkem měsíčně</p>
+                    <p style={styles.summaryLabel}>{t('dashboard.totalMonthlyLabel')}</p>
                     <h3 style={styles.summaryValue}>{totalMonthly} CZK</h3>
                   </div>
                   <div style={styles.summaryCard}>
-                    <p style={styles.summaryLabel}>Nejdražší služba</p>
+                    <p style={styles.summaryLabel}>{t('dashboard.mostExpService')}</p>
                     <h3 style={styles.summaryValueHighlight}>
                       {subscriptions.reduce((max, s) => s.price > max.price ? s : max, subscriptions[0]).name}
                     </h3>
                   </div>
                   <div style={styles.summaryCard}>
-                    <p style={styles.summaryLabel}>Průměrná cena</p>
+                    <p style={styles.summaryLabel}>{t('dashboard.avgPrice')}</p>
                     <h3 style={styles.summaryValue}>{Math.round(totalMonthly / subscriptions.length)} CZK</h3>
                   </div>
                 </div>
@@ -488,8 +495,8 @@ function Dashboard() {
                 <div style={styles.chartsRow}>
                   {/* Donut Chart */}
                   <div style={styles.chartCard}>
-                    <h3 style={styles.sectionTitle}>Rozložení výdajů</h3>
-                    <p style={styles.chartSubtitle}>Podíl jednotlivých služeb na celkových nákladech</p>
+                    <h3 style={styles.sectionTitle}>{t('dashboard.chart1Title')}</h3>
+                    <p style={styles.chartSubtitle}>{t('dashboard.chart1Sub')}</p>
                     <div style={styles.chartContainerSquare}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -530,8 +537,8 @@ function Dashboard() {
 
                   {/* Bar Chart */}
                   <div style={styles.chartCard}>
-                    <h3 style={styles.sectionTitle}>Porovnání nákladů</h3>
-                    <p style={styles.chartSubtitle}>Přehled cen všech vašich předplatných</p>
+                    <h3 style={styles.sectionTitle}>{t('dashboard.chart2Title')}</h3>
+                    <p style={styles.chartSubtitle}>{t('dashboard.chart2Sub')}</p>
                     <div style={styles.chartContainerSquare}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={subscriptions} margin={{ top: 20, right: 20, left: -10, bottom: 5 }} barCategoryGap="25%">
@@ -578,7 +585,7 @@ function Dashboard() {
         {activeTab === 'nastaveni' && (
           <>
             <header style={styles.header}>
-              <h2 style={styles.pageTitle}>Nastavení</h2>
+              <h2 style={styles.pageTitle}>{t('dashboard.nastaveniTitle')}</h2>
             </header>
 
             {/* Toast уведомление */}
@@ -596,24 +603,24 @@ function Dashboard() {
             <div style={styles.settingsCard}>
               <div style={styles.settingsCardHeader}>
                 <span style={styles.settingsCardIcon}>👤</span>
-                <h3 style={styles.settingsCardTitle}>Profil uživatele</h3>
+                <h3 style={styles.settingsCardTitle}>{t('dashboard.profileTitle')}</h3>
               </div>
               <div style={styles.settingsProfileGrid}>
                 <div style={styles.settingsProfileItem}>
-                  <span style={styles.settingsProfileLabel}>Přezdívka</span>
+                  <span style={styles.settingsProfileLabel}>{t('dashboard.profileUser')}</span>
                   <span style={styles.settingsProfileValue}>{profile?.username || '—'}</span>
                 </div>
                 <div style={styles.settingsProfileItem}>
-                  <span style={styles.settingsProfileLabel}>E-mail</span>
+                  <span style={styles.settingsProfileLabel}>{t('dashboard.profileEmail')}</span>
                   <span style={styles.settingsProfileValue}>{profile?.email || '—'}</span>
                 </div>
                 <div style={styles.settingsProfileItem}>
-                  <span style={styles.settingsProfileLabel}>Telegram</span>
+                  <span style={styles.settingsProfileLabel}>{t('dashboard.profileTg')}</span>
                   <span style={{
                     ...styles.settingsProfileValue,
                     color: profile?.telegram_chat_id ? '#5A6E26' : '#A68E7A',
                   }}>
-                    {profile?.telegram_chat_id ? `✅ Propojen (${profile.telegram_chat_id})` : '⚪ Nepropojen'}
+                    {profile?.telegram_chat_id ? `✅ ${t('dashboard.tgLinked')} (${profile.telegram_chat_id})` : `⚪ ${t('dashboard.tgUnlinked')}`}
                   </span>
                 </div>
               </div>
@@ -625,12 +632,12 @@ function Dashboard() {
               <div style={styles.settingsCard}>
                 <div style={styles.settingsCardHeader}>
                   <span style={styles.settingsCardIcon}>📧</span>
-                  <h3 style={styles.settingsCardTitle}>Změna e-mailu</h3>
+                  <h3 style={styles.settingsCardTitle}>{t('dashboard.changeEmailTitle')}</h3>
                 </div>
                 <form onSubmit={handleChangeEmail} style={styles.settingsForm}>
                   <div style={styles.fieldGroup}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>📨</span> Nový e-mail
+                      <span style={styles.fieldIcon}>📨</span> {t('dashboard.newEmailLabel')}
                     </label>
                     <input
                       type="email" required placeholder="novy@email.cz" style={styles.modalInput}
@@ -640,15 +647,15 @@ function Dashboard() {
                   </div>
                   <div style={styles.fieldGroup}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>🔒</span> Aktuální heslo
+                      <span style={styles.fieldIcon}>🔒</span> {t('dashboard.currentPwdLabel')}
                     </label>
                     <input
-                      type="password" required placeholder="Pro ověření" style={styles.modalInput}
+                      type="password" required placeholder="***" style={styles.modalInput}
                       value={emailForm.password}
                       onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
                     />
                   </div>
-                  <button type="submit" style={styles.settingsSubmitBtn}>Změnit e-mail</button>
+                  <button type="submit" style={styles.settingsSubmitBtn}>{t('dashboard.changeEmailBtn')}</button>
                 </form>
               </div>
 
@@ -656,25 +663,25 @@ function Dashboard() {
               <div style={styles.settingsCard}>
                 <div style={styles.settingsCardHeader}>
                   <span style={styles.settingsCardIcon}>🔑</span>
-                  <h3 style={styles.settingsCardTitle}>Změna hesla</h3>
+                  <h3 style={styles.settingsCardTitle}>{t('dashboard.changePwdTitle')}</h3>
                 </div>
                 <form onSubmit={handleChangePassword} style={styles.settingsForm}>
                   <div style={styles.fieldGroup}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>🔒</span> Aktuální heslo
+                      <span style={styles.fieldIcon}>🔒</span> {t('dashboard.currentPwdLabel')}
                     </label>
                     <input
-                      type="password" required placeholder="Současné heslo" style={styles.modalInput}
+                      type="password" required placeholder="***" style={styles.modalInput}
                       value={passwordForm.current_password}
                       onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
                     />
                   </div>
                   <div style={styles.fieldGroup}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>🆕</span> Nové heslo
+                      <span style={styles.fieldIcon}>🆕</span> {t('dashboard.newPwdLabel')}
                     </label>
                     <input
-                      type="password" required placeholder="Min. 8 znaků, velké písmeno, číslo" style={styles.modalInput}
+                      type="password" required placeholder="***" style={styles.modalInput}
                       value={passwordForm.new_password}
                       onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
                       onFocus={() => setShowPasswordRules(true)}
@@ -684,13 +691,13 @@ function Dashboard() {
                       <div style={styles.passwordRulesContainer}>
                         <ul style={styles.passwordRulesList}>
                           <li style={{ color: hasMinLength ? '#5A6E26' : '#7A2F2F', transition: 'color 0.2s' }}>
-                            Minimálně 8 znaků
+                            {t('dashboard.ruleLen')}
                           </li>
                           <li style={{ color: hasUpperCase ? '#5A6E26' : '#7A2F2F', transition: 'color 0.2s' }}>
-                            Alespoň 1 velké písmeno
+                            {t('dashboard.ruleUpper')}
                           </li>
                           <li style={{ color: hasNumber ? '#5A6E26' : '#7A2F2F', transition: 'color 0.2s' }}>
-                            Alespoň 1 číslice
+                            {t('dashboard.ruleNum')}
                           </li>
                         </ul>
                       </div>
@@ -698,15 +705,15 @@ function Dashboard() {
                   </div>
                   <div style={styles.fieldGroup}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>🔄</span> Potvrzení hesla
+                      <span style={styles.fieldIcon}>🔄</span> {t('dashboard.confirmPwdLabel')}
                     </label>
                     <input
-                      type="password" required placeholder="Zopakujte nové heslo" style={styles.modalInput}
+                      type="password" required placeholder="***" style={styles.modalInput}
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                     />
                   </div>
-                  <button type="submit" style={styles.settingsSubmitBtn}>Změnit heslo</button>
+                  <button type="submit" style={styles.settingsSubmitBtn}>{t('dashboard.changePwdBtn')}</button>
                 </form>
               </div>
             </div>
@@ -715,33 +722,33 @@ function Dashboard() {
             <div style={styles.settingsCard}>
               <div style={styles.settingsCardHeader}>
                 <span style={styles.settingsCardIcon}>🤖</span>
-                <h3 style={styles.settingsCardTitle}>Telegram Bot</h3>
+                <h3 style={styles.settingsCardTitle}>{t('dashboard.tgBotTitle')}</h3>
               </div>
               <p style={styles.settingsTelegramDesc}>
-                Propojte svůj účet s Telegram botem pro automatická upozornění na blížící se platby.
+                {t('dashboard.tgBotDesc')}
               </p>
 
               {profile?.telegram_chat_id ? (
                 <div style={styles.settingsTelegramLinked}>
                   <div style={styles.settingsTelegramStatus}>
                     <span style={styles.settingsTelegramDot} />
-                    <span style={styles.settingsTelegramStatusText}>Propojen: <strong>{profile.telegram_chat_id}</strong></span>
+                    <span style={styles.settingsTelegramStatusText}>{t('dashboard.tgLinked')}: <strong>{profile.telegram_chat_id}</strong></span>
                   </div>
-                  <button onClick={handleUnlinkTelegram} style={styles.settingsUnlinkBtn}>Odpojit Telegram</button>
+                  <button onClick={handleUnlinkTelegram} style={styles.settingsUnlinkBtn}>{t('dashboard.unlinkTgBtn')}</button>
                 </div>
               ) : (
                 <form onSubmit={handleLinkTelegram} style={styles.settingsTelegramForm}>
                   <div style={styles.settingsTelegramInputRow}>
                     <input
-                      type="text" required placeholder="Váš Telegram Chat ID"
+                      type="text" required placeholder="ID"
                       style={{ ...styles.modalInput, flex: 1 }}
                       value={telegramId}
                       onChange={(e) => setTelegramId(e.target.value)}
                     />
-                    <button type="submit" style={styles.settingsSubmitBtn}>Propojit</button>
+                    <button type="submit" style={styles.settingsSubmitBtn}>{t('dashboard.linkTgBtn')}</button>
                   </div>
                   <p style={styles.settingsTelegramHint}>
-                    💡 Chat ID získáte tak, že napíšete našemu botu na Telegram příkaz <strong>/start</strong>
+                    {t('dashboard.tgHint')}
                   </p>
                 </form>
               )}
@@ -752,14 +759,14 @@ function Dashboard() {
         {activeTab === 'export' && (
           <>
             <header style={styles.header}>
-              <h2 style={styles.pageTitle}>Export dat</h2>
+              <h2 style={styles.pageTitle}>{t('dashboard.exportTitle')}</h2>
               {subscriptions.length > 0 && (
                 <button
                   style={styles.addButton}
                   onClick={() => {
                     const bom = '\uFEFF';
-                    const header = 'Název;Cena;Měna;Cyklus;Další platba\n';
-                    const rows = subscriptions.map(s => `${s.name};${s.price};${s.currency};${s.cycle};${s.nextPayment}`).join('\n');
+                    const header = `${t('dashboard.colName')};${t('dashboard.colPrice')};${t('dashboard.colCurrency')};${t('dashboard.colCycle')};${t('dashboard.colNext')}\n`;
+                    const rows = subscriptions.map(s => `${s.name};${s.price};${s.currency};${s.cycle === 'Měsíčně' ? t('dashboard.optMonth') : (s.cycle === 'Ročně' ? t('dashboard.optYear') : s.cycle)};${s.nextPayment}`).join('\n');
                     const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -769,7 +776,7 @@ function Dashboard() {
                     URL.revokeObjectURL(url);
                   }}
                 >
-                  📥 Stáhnout CSV
+                  {t('dashboard.downloadCsvBtn')}
                 </button>
               )}
             </header>
@@ -777,16 +784,16 @@ function Dashboard() {
             {subscriptions.length === 0 ? (
               <div style={styles.chartEmptyState}>
                 <span style={{ fontSize: '64px' }}>📄</span>
-                <h3 style={{ color: '#7A2F2F', fontSize: '22px', fontWeight: '800', margin: '16px 0 8px' }}>Žádná data k exportu</h3>
-                <p style={{ color: '#A68E7A', fontSize: '15px', fontWeight: '500' }}>Přidejte předplatné a pak je můžete exportovat do CSV</p>
+                <h3 style={{ color: '#7A2F2F', fontSize: '22px', fontWeight: '800', margin: '16px 0 8px' }}>{t('dashboard.exportEmptyTitle')}</h3>
+                <p style={{ color: '#A68E7A', fontSize: '15px', fontWeight: '500' }}>{t('dashboard.exportEmptyHint')}</p>
               </div>
             ) : (
               <div style={styles.exportSection}>
                 <div style={styles.exportInfo}>
                   <div style={styles.exportInfoIcon}>📊</div>
                   <div>
-                    <h4 style={styles.exportInfoTitle}>Náhled dat k exportu</h4>
-                    <p style={styles.exportInfoDesc}>{subscriptions.length} předplatných • Celkem {totalMonthly} CZK měsíčně</p>
+                    <h4 style={styles.exportInfoTitle}>{t('dashboard.exportPreviewTitle')}</h4>
+                    <p style={styles.exportInfoDesc}>{subscriptions.length} {t('dashboard.exportPreviewDesc')} {totalMonthly} {t('dashboard.exportMonthly')}</p>
                   </div>
                 </div>
 
@@ -794,11 +801,11 @@ function Dashboard() {
                   <table style={styles.exportTable}>
                     <thead>
                       <tr>
-                        <th style={styles.exportTh}>Název</th>
-                        <th style={styles.exportTh}>Cena</th>
-                        <th style={styles.exportTh}>Měna</th>
-                        <th style={styles.exportTh}>Cyklus</th>
-                        <th style={styles.exportTh}>Další platba</th>
+                        <th style={styles.exportTh}>{t('dashboard.colName')}</th>
+                        <th style={styles.exportTh}>{t('dashboard.colPrice')}</th>
+                        <th style={styles.exportTh}>{t('dashboard.colCurrency')}</th>
+                        <th style={styles.exportTh}>{t('dashboard.colCycle')}</th>
+                        <th style={styles.exportTh}>{t('dashboard.colNext')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -811,14 +818,14 @@ function Dashboard() {
                             <span style={styles.exportTdPrice}>{sub.price}</span>
                           </td>
                           <td style={styles.exportTd}>{sub.currency}</td>
-                          <td style={styles.exportTd}>{sub.cycle}</td>
+                          <td style={styles.exportTd}>{sub.cycle === 'Měsíčně' ? t('dashboard.optMonth') : (sub.cycle === 'Ročně' ? t('dashboard.optYear') : sub.cycle)}</td>
                           <td style={styles.exportTd}>{sub.nextPayment}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td style={{ ...styles.exportTd, fontWeight: '800', color: '#7A2F2F' }}>Celkem</td>
+                        <td style={{ ...styles.exportTd, fontWeight: '800', color: '#7A2F2F' }}>{t('dashboard.colTotal')}</td>
                         <td style={{ ...styles.exportTd, fontWeight: '800', color: '#7A2F2F' }}>{totalMonthly}</td>
                         <td style={styles.exportTd}>CZK</td>
                         <td style={styles.exportTd}>—</td>
@@ -842,8 +849,8 @@ function Dashboard() {
                 <div style={styles.modalIconCircle}>
                   <span style={styles.modalIconEmoji}>✨</span>
                 </div>
-                <h3 style={styles.modalTitle}>Nové předplatné</h3>
-                <p style={styles.modalSubtitle}>Přidejte službu a sledujte výdaje</p>
+                <h3 style={styles.modalTitle}>{t('dashboard.modalAddTitle')}</h3>
+                <p style={styles.modalSubtitle}>{t('dashboard.modalAddSub')}</p>
               </div>
 
               {/* Разделитель */}
@@ -854,10 +861,10 @@ function Dashboard() {
                 {/* Название службы */}
                 <div style={styles.fieldGroup}>
                   <label style={styles.fieldLabel}>
-                    <span style={styles.fieldIcon}>🏷️</span> Název služby
+                    <span style={styles.fieldIcon}>🏷️</span> {t('dashboard.modalName')}
                   </label>
                   <input 
-                    type="text" placeholder="např. Netflix, Spotify..." required style={styles.modalInput}
+                    type="text" placeholder="" required style={styles.modalInput}
                     value={newSub.name} onChange={(e) => setNewSub({...newSub, name: e.target.value})} 
                   />
                 </div>
@@ -866,7 +873,7 @@ function Dashboard() {
                 <div style={styles.fieldRow}>
                   <div style={{...styles.fieldGroup, flex: 2}}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>💰</span> Cena
+                      <span style={styles.fieldIcon}>💰</span> {t('dashboard.modalPrice')}
                     </label>
                     <input 
                       type="number" placeholder="0" required style={styles.modalInput}
@@ -875,7 +882,7 @@ function Dashboard() {
                   </div>
                   <div style={{...styles.fieldGroup, flex: 1}}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>💱</span> Měna
+                      <span style={styles.fieldIcon}>💱</span> {t('dashboard.modalCurrency')}
                     </label>
                     <select style={styles.modalSelect} value={newSub.currency} onChange={(e) => setNewSub({...newSub, currency: e.target.value})}>
                       <option value="CZK">CZK</option>
@@ -888,18 +895,18 @@ function Dashboard() {
                 {/* Цикл */}
                 <div style={styles.fieldGroup}>
                   <label style={styles.fieldLabel}>
-                    <span style={styles.fieldIcon}>🔄</span> Fakturační cyklus
+                    <span style={styles.fieldIcon}>🔄</span> {t('dashboard.modalCycle')}
                   </label>
                   <select style={styles.modalSelect} value={newSub.cycle} onChange={(e) => setNewSub({...newSub, cycle: e.target.value})}>
-                    <option value="Měsíčně">Měsíčně</option>
-                    <option value="Ročně">Ročně</option>
+                    <option value="Měsíčně">{t('dashboard.optMonth')}</option>
+                    <option value="Ročně">{t('dashboard.optYear')}</option>
                   </select>
                 </div>
 
                 {/* Дата следующего платежа */}
                 <div style={styles.fieldGroup}>
                   <label style={styles.fieldLabel}>
-                    <span style={styles.fieldIcon}>📅</span> Další platba
+                    <span style={styles.fieldIcon}>📅</span> {t('dashboard.modalNext')}
                   </label>
                   <input 
                     type="date" required style={styles.modalInput}
@@ -919,7 +926,7 @@ function Dashboard() {
                     onMouseLeave={() => setIsCancelHovered(false)}
                     onClick={() => setShowAddModal(false)}
                   >
-                    Zrušit
+                    {t('dashboard.btnCancel')}
                   </button>
                   <button 
                     type="submit" 
@@ -930,7 +937,7 @@ function Dashboard() {
                     onMouseEnter={() => setIsSubmitHovered(true)}
                     onMouseLeave={() => setIsSubmitHovered(false)}
                   >
-                    ✓ Uložit předplatné
+                    {t('dashboard.btnSaveAdd')}
                   </button>
                 </div>
               </form>
@@ -947,8 +954,8 @@ function Dashboard() {
                 <div style={styles.modalIconCircle}>
                   <span style={styles.modalIconEmoji}>✏️</span>
                 </div>
-                <h3 style={styles.modalTitle}>Upravit předplatné</h3>
-                <p style={styles.modalSubtitle}>Změňte údaje služby {editSub.name}</p>
+                <h3 style={styles.modalTitle}>{t('dashboard.modalEditTitle')}</h3>
+                <p style={styles.modalSubtitle}>{t('dashboard.modalEditSub')}</p>
               </div>
 
               <div style={styles.modalDivider} />
@@ -957,10 +964,10 @@ function Dashboard() {
                 
                 <div style={styles.fieldGroup}>
                   <label style={styles.fieldLabel}>
-                    <span style={styles.fieldIcon}>🏷️</span> Název služby
+                    <span style={styles.fieldIcon}>🏷️</span> {t('dashboard.modalName')}
                   </label>
                   <input 
-                    type="text" placeholder="např. Netflix, Spotify..." required style={styles.modalInput}
+                    type="text" placeholder="" required style={styles.modalInput}
                     value={editSub.name} onChange={(e) => setEditSub({...editSub, name: e.target.value})} 
                   />
                 </div>
@@ -968,7 +975,7 @@ function Dashboard() {
                 <div style={styles.fieldRow}>
                   <div style={{...styles.fieldGroup, flex: 2}}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>💰</span> Cena
+                      <span style={styles.fieldIcon}>💰</span> {t('dashboard.modalPrice')}
                     </label>
                     <input 
                       type="number" placeholder="0" required style={styles.modalInput}
@@ -977,7 +984,7 @@ function Dashboard() {
                   </div>
                   <div style={{...styles.fieldGroup, flex: 1}}>
                     <label style={styles.fieldLabel}>
-                      <span style={styles.fieldIcon}>💱</span> Měna
+                      <span style={styles.fieldIcon}>💱</span> {t('dashboard.modalCurrency')}
                     </label>
                     <select style={styles.modalSelect} value={editSub.currency} onChange={(e) => setEditSub({...editSub, currency: e.target.value})}>
                       <option value="CZK">CZK</option>
@@ -989,17 +996,17 @@ function Dashboard() {
 
                 <div style={styles.fieldGroup}>
                   <label style={styles.fieldLabel}>
-                    <span style={styles.fieldIcon}>🔄</span> Fakturační cyklus
+                    <span style={styles.fieldIcon}>🔄</span> {t('dashboard.modalCycle')}
                   </label>
                   <select style={styles.modalSelect} value={editSub.cycle} onChange={(e) => setEditSub({...editSub, cycle: e.target.value})}>
-                    <option value="Měsíčně">Měsíčně</option>
-                    <option value="Ročně">Ročně</option>
+                    <option value="Měsíčně">{t('dashboard.optMonth')}</option>
+                    <option value="Ročně">{t('dashboard.optYear')}</option>
                   </select>
                 </div>
 
                 <div style={styles.fieldGroup}>
                   <label style={styles.fieldLabel}>
-                    <span style={styles.fieldIcon}>📅</span> Další platba
+                    <span style={styles.fieldIcon}>📅</span> {t('dashboard.modalNext')}
                   </label>
                   <input 
                     type="date" required style={styles.modalInput}
@@ -1018,7 +1025,7 @@ function Dashboard() {
                     onMouseLeave={() => setIsEditCancelHovered(false)}
                     onClick={() => setShowEditModal(false)}
                   >
-                    Zrušit
+                    {t('dashboard.btnCancel')}
                   </button>
                   <button 
                     type="submit" 
@@ -1029,7 +1036,7 @@ function Dashboard() {
                     onMouseEnter={() => setIsEditSubmitHovered(true)}
                     onMouseLeave={() => setIsEditSubmitHovered(false)}
                   >
-                    ✓ Uložit změny
+                    {t('dashboard.btnSaveEdit')}
                   </button>
                 </div>
               </form>

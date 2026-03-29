@@ -1,10 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 // Импортируем логотип
 import logo from '../assets/logo.svg'; 
 
 function Header() {
+  const { t } = useLanguage();
+
   return (
     <header style={styles.header}>
       
@@ -17,14 +21,15 @@ function Header() {
 
       {/* ЦЕНТР: Меню */}
       <nav style={styles.nav}>
-        <Link to="/about" style={styles.link}>O nás</Link>
-        {/* 👇 Заменили тег <a> на <Link> и направили на /services */}
-        <Link to="/services" style={styles.link}>Služby</Link>
-        <Link to="/login" style={styles.link}>Login</Link>
+        <Link to="/about" style={styles.link}>{t('header.about')}</Link>
+        <Link to="/services" style={styles.link}>{t('header.services')}</Link>
+        <Link to="/login" style={styles.link}>{t('header.login')}</Link>
       </nav>
 
-      {/* ПРАВЫЙ БЛОК: Пустота для баланса */}
-      <div style={styles.sideBlock}></div> 
+      {/* ПРАВЫЙ БЛОК: Выбор языка */}
+      <div style={styles.sideBlockRight}>
+        <LanguageSwitcher color="#FFFFFF" />
+      </div> 
     </header>
   );
 }
@@ -44,6 +49,12 @@ const styles = {
         width: '200px', 
         display: 'flex',
         alignItems: 'center',
+    },
+    sideBlockRight: {
+        width: '200px', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
     },
     logoLink: {
         display: 'flex',

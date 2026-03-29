@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { LanguageProvider } from './context/LanguageContext';
 
 // Компоненты
 import Header from './components/Header';
@@ -15,37 +16,39 @@ import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
-    <Routes>
-      {/* ГЛАВНАЯ СТРАНИЦА */}
-      <Route path="/" element={
-        <>
-          <Header />
-          <Hero />
-        </>
-      } />
-      
-      {/* СТРАНИЦА "O NÁS" */}
-      <Route path="/about" element={
-        <>
-          <Header />
-          <About />
-        </>
-      } />
+    <LanguageProvider>
+      <Routes>
+        {/* ГЛАВНАЯ СТРАНИЦА */}
+        <Route path="/" element={
+          <>
+            <Header />
+            <Hero />
+          </>
+        } />
+        
+        {/* СТРАНИЦА "O NÁS" */}
+        <Route path="/about" element={
+          <>
+            <Header />
+            <About />
+          </>
+        } />
 
-      {/* СТРАНИЦА "SLUŽBY" 👇 Добавили маршрут */}
-      <Route path="/services" element={
-        <>
-          <Header />
-          <Services />
-        </>
-      } />
-      
-      {/* СТРАНИЦЫ ВХОДА И РЕГИСТРАЦИИ (без хедера) */}
-      <Route path="/register" element={<Register />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-    </Routes>
+        {/* СТРАНИЦА "SLUŽBY" */}
+        <Route path="/services" element={
+          <>
+            <Header />
+            <Services />
+          </>
+        } />
+        
+        {/* СТРАНИЦЫ ВХОДА И РЕГИСТРАЦИИ (без хедера) */}
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </LanguageProvider>
   );
 }
 

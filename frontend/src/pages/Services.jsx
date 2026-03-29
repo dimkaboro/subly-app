@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
+import { useLanguage } from '../context/LanguageContext';
 
 function Services() {
   const [isBtnHovered, setIsBtnHovered] = useState(false);
   const navigate = useNavigate(); 
+  const { t } = useLanguage();
 
   return (
     <section style={styles.section}>
@@ -11,10 +13,9 @@ function Services() {
         
         {/* Заголовок страницы */}
         <div style={styles.headerContainer}>
-          <h1 style={styles.title}>Naše služby</h1>
+          <h1 style={styles.title}>{t('services.title')}</h1>
           <p style={styles.subtitle}>
-            Podívejte se, jak vám Subly může ušetřit čas a peníze. 
-            Vše pro vaši finanční pohodu na jednom místě.
+            {t('services.subtitle')}
           </p>
         </div>
 
@@ -25,10 +26,9 @@ function Services() {
             <div style={styles.serviceWatermark}>01</div>
             <div style={styles.serviceIcon}>💳</div>
             <div style={styles.serviceContent}>
-              <h3 style={styles.serviceTitle}>Správa předplatných</h3>
+              <h3 style={styles.serviceTitle}>{t('services.s1Title')}</h3>
               <p style={styles.serviceText}>
-                Mějte všechny své Netflixy, Spotify a další platby pod kontrolou. 
-                Upozorníme vás před každým stržením peněz.
+                {t('services.s1Text')}
               </p>
             </div>
           </div>
@@ -37,10 +37,9 @@ function Services() {
             <div style={styles.serviceWatermark}>02</div>
             <div style={styles.serviceIcon}>📊</div>
             <div style={styles.serviceContent}>
-              <h3 style={styles.serviceTitle}>Chytrá analytika</h3>
+              <h3 style={styles.serviceTitle}>{t('services.s2Title')}</h3>
               <p style={styles.serviceText}>
-                Přehledné grafy vám ukážou, kam mizí vaše peníze. 
-                Zjistěte, za jaké kategorie utrácíte nejvíce.
+                {t('services.s2Text')}
               </p>
             </div>
           </div>
@@ -49,10 +48,9 @@ function Services() {
             <div style={styles.serviceWatermark}>03</div>
             <div style={styles.serviceIcon}>📥</div>
             <div style={styles.serviceContent}>
-              <h3 style={styles.serviceTitle}>Snadný export dat</h3>
+              <h3 style={styles.serviceTitle}>{t('services.s3Title')}</h3>
               <p style={styles.serviceText}>
-                Potřebujete svá data pro domácí účetnictví? Jedním kliknutím 
-                exportujte kompletní přehled svých předplatných do CSV pro Excel.
+                {t('services.s3Text')}
               </p>
             </div>
           </div>
@@ -70,7 +68,7 @@ function Services() {
           onClick={() => navigate('/register')} 
         >
           <button style={styles.actionButton}>
-            Začít šetřit
+            {t('services.ctaBtn')}
           </button>
         </div>
 

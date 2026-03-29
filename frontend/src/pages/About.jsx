@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-// 👇 1. Импортируем хук для навигации
 import { useNavigate } from 'react-router-dom'; 
+import { useLanguage } from '../context/LanguageContext';
 
 function About() {
   const [isBtnHovered, setIsBtnHovered] = useState(false);
-  // 👇 2. Инициализируем хук
   const navigate = useNavigate(); 
+  const { t } = useLanguage();
 
   return (
     <section style={styles.section}>
@@ -13,11 +13,9 @@ function About() {
         
         {/* Заголовок и интро */}
         <div style={styles.headerContainer}>
-          <h1 style={styles.title}>O nás</h1>
+          <h1 style={styles.title}>{t('about.title')}</h1>
           <p style={styles.subtitle}>
-            Vítejte v Subly! Naším cílem je zjednodušit váš digitální život. 
-            Pomáháme vám získat absolutní kontrolu nad všemi vašimi předplatnými 
-            na jednom přehledném místě.
+            {t('about.subtitle')}
           </p>
         </div>
 
@@ -29,9 +27,9 @@ function About() {
               <span style={styles.storyEmoji}>🎯</span>
             </div>
             <div style={styles.storyContent}>
-              <h3 style={styles.storyTitle}>Naše mise</h3>
+              <h3 style={styles.storyTitle}>{t('about.missionTitle')}</h3>
               <p style={styles.storyText}>
-                Konec zbytečným výdajům. Chceme, abyste platili jen za to, co opravdu využíváte a milujete.
+                {t('about.missionText')}
               </p>
             </div>
           </div>
@@ -41,9 +39,9 @@ function About() {
               <span style={styles.storyEmoji}>💡</span>
             </div>
             <div style={styles.storyContent}>
-              <h3 style={styles.storyTitle}>Jednoduchost</h3>
+              <h3 style={styles.storyTitle}>{t('about.simplicityTitle')}</h3>
               <p style={styles.storyText}>
-                Žádné složité tabulky. Čistý a intuitivní design, ve kterém se zorientujete za pár vteřin.
+                {t('about.simplicityText')}
               </p>
             </div>
           </div>
@@ -53,9 +51,9 @@ function About() {
               <span style={styles.storyEmoji}>🔒</span>
             </div>
             <div style={styles.storyContent}>
-              <h3 style={styles.storyTitle}>Bezpečnost</h3>
+              <h3 style={styles.storyTitle}>{t('about.securityTitle')}</h3>
               <p style={styles.storyText}>
-                Vaše soukromí je pro nás prioritou. Data jsou u nás chráněna pomocí nejmodernějších standardů.
+                {t('about.securityText')}
               </p>
             </div>
           </div>
@@ -74,7 +72,7 @@ function About() {
           onClick={() => navigate('/register')} 
         >
           <button style={styles.actionButton}>
-            Přidat se k nám
+            {t('about.ctaBtn')}
           </button>
         </div>
 
