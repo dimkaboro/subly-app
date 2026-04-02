@@ -92,3 +92,18 @@ class ChangePassword(BaseModel):
 
 class TelegramLink(BaseModel):
     telegram_chat_id: str
+
+class NotificationSettingsUpdate(BaseModel):
+    notify_email: bool
+    notify_telegram: bool
+    notify_intervals: str # Comma-separated list
+    notify_language: str
+
+class NotificationSettingsResponse(BaseModel):
+    notify_email: bool
+    notify_telegram: bool
+    notify_intervals: str
+    notify_language: str
+
+    class Config:
+        from_attributes = True

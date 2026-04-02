@@ -61,6 +61,22 @@ const ru = {
     ruleLen: 'Минимум 8 символов',
     ruleUpper: 'Хотя бы 1 заглавная буква',
     ruleNum: 'Хотя бы 1 цифра',
+    ruleSpecial: 'Хотя бы 1 спецсимвол',
+
+    // Notification Settings
+    notificationSettingsTitle: 'Настройки уведомлений',
+    notifyChannels: 'Куда отправлять уведомления?',
+    notifyIntervals: 'Когда отправлять уведомления?',
+    notifyEmail: 'Email',
+    notifyTelegram: 'Telegram',
+    int14d: 'За 14 дней',
+    int7d: 'За 7 дней',
+    int3d: 'За 3 дня',
+    int1d: 'За 1 день',
+    int12h: 'За 12 часов',
+    int3h: 'За 3 часа',
+    int1h: 'За 1 час',
+    notifySaved: 'Настройки сохранены',
     nextBtn: 'Далее'
   },
   forgot: {
@@ -165,8 +181,24 @@ const ru = {
     msgTgSuccess: 'Telegram успешно привязан',
     msgTgUnlink: 'Telegram отвязан',
     msgServerErr: 'Ошибка подключения к серверу',
-    msgWeakPwd: 'Пароль не соответствует требованиям (минимум 8 символов, 1 заглавная буква, 1 цифра)',
-    msgPwdMismatch: 'Пароли не совпадают'
+    msgWeakPwd: 'Пароль не соответствует всем требованиям (мин 8 символов, 1 заглавная, 1 цифра, 1 спецсимвол)',
+    msgPwdMismatch: 'Пароли не совпадают',
+    
+    // Notification Settings
+    notificationSettingsTitle: 'Настройки уведомлений',
+    notifyChannels: 'Куда отправлять уведомления?',
+    notifyIntervals: 'Когда отправлять уведомления?',
+    notifyLang: 'Язык уведомлений?',
+    notifyEmail: 'Email',
+    notifyTelegram: 'Telegram',
+    int14d: 'За 14 дней',
+    int7d: 'За 7 дней',
+    int3d: 'За 3 дня',
+    int1d: 'За 1 день',
+    int12h: 'За 12 часов',
+    int3h: 'За 3 часа',
+    int1h: 'За 1 час',
+    notifySaved: 'Настройки сохранены'
   }
 };
 

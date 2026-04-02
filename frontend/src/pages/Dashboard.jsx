@@ -35,6 +35,14 @@ function Dashboard() {
   const [telegramId, setTelegramId] = useState('');
   const [showPasswordRules, setShowPasswordRules] = useState(false);
 
+  // Состояния для уведомлений
+  const [notifySettings, setNotifySettings] = useState({
+    notify_email: true,
+    notify_telegram: true,
+    notify_intervals: [],
+    notify_language: 'cs'
+  });
+
   // ДИНАМИЧЕСКИЕ ПРАВИЛА ПАРОЛЯ ДЛЯ НАСТРОЕК
   const hasMinLength = passwordForm.new_password.length >= 8;
   const hasUpperCase = /[A-Z]/.test(passwordForm.new_password);
@@ -83,6 +91,27 @@ function Dashboard() {
     }
   };
 
+  const fetchNotificationSettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { handle401(); return; }
+      const response = await fetch('http://localhost:8000/api/me/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifySettings({
+          notify_email: data.notify_email,
+          notify_telegram: data.notify_telegram,
+          notify_intervals: data.notify_intervals ? data.notify_intervals.split(',') : [],
+          notify_language: data.notify_language || 'cs'
+        });
+      }
+    } catch (error) {
+      console.error('Notify fetch error:', error);
+    }
+  };
+
   useEffect(() => {
     fetchSubscriptions();
   }, []);
@@ -91,6 +120,7 @@ function Dashboard() {
   useEffect(() => {
     if (activeTab === 'nastaveni') {
       fetchProfile();
+      fetchNotificationSettings();
     }
   }, [activeTab]);
 
@@ -200,6 +230,35 @@ function Dashboard() {
     } catch (error) {
       setSettingsMsg({ type: 'error', text: t('dashboard.msgServerErr') });
     }
+  };
+
+  const handleNotifyChange = async (newSettings) => {
+    setNotifySettings(newSettings);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { handle401(); return; }
+      const body = {
+        notify_email: newSettings.notify_email,
+        notify_telegram: newSettings.notify_telegram,
+        notify_intervals: newSettings.notify_intervals.join(','),
+        notify_language: newSettings.notify_language || 'cs'
+      };
+      await fetch('http://localhost:8000/api/me/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body)
+      });
+      setSettingsMsg({ type: 'success', text: t('dashboard.notifySaved') });
+    } catch (error) {
+      setSettingsMsg({ type: 'error', text: t('dashboard.msgServerErr') });
+    }
+  };
+
+  const toggleInterval = (interval) => {
+    const current = notifySettings.notify_intervals;
+    const isSelected = current.includes(interval);
+    const updated = isSelected ? current.filter(i => i !== interval) : [...current, interval];
+    handleNotifyChange({ ...notifySettings, notify_intervals: updated });
   };
 
   const totalMonthly = subscriptions.reduce((sum, sub) => sum + sub.price, 0);
@@ -774,6 +833,80 @@ function Dashboard() {
                   </div>
                 </form>
               )}
+            </div>
+
+            {/* Секция 4: Настройки Уведомлений */}
+            <div style={styles.settingsCard}>
+              <div style={styles.settingsCardHeader}>
+                <span style={styles.settingsCardIcon}>🔔</span>
+                <h3 style={styles.settingsCardTitle}>{t('dashboard.notificationSettingsTitle')}</h3>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Channels */}
+                <div>
+                  <h4 style={{ fontSize: '14px', color: '#7A2F2F', fontWeight: '700', marginBottom: '10px' }}>
+                    {t('dashboard.notifyChannels')}
+                  </h4>
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5a3a2a', fontWeight: '600' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={notifySettings.notify_email}
+                        onChange={(e) => handleNotifyChange({ ...notifySettings, notify_email: e.target.checked })}
+                        style={{ accentColor: '#7A2F2F', transform: 'scale(1.2)' }}
+                      />
+                      {t('dashboard.notifyEmail')}
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5a3a2a', fontWeight: '600' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={notifySettings.notify_telegram}
+                        onChange={(e) => handleNotifyChange({ ...notifySettings, notify_telegram: e.target.checked })}
+                        style={{ accentColor: '#7A2F2F', transform: 'scale(1.2)' }}
+                      />
+                      {t('dashboard.notifyTelegram')}
+                    </label>
+                  </div>
+                </div>
+
+                {/* Intervals */}
+                <div>
+                  <h4 style={{ fontSize: '14px', color: '#7A2F2F', fontWeight: '700', marginBottom: '10px' }}>
+                    {t('dashboard.notifyIntervals')}
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
+                    {['14d', '7d', '3d', '1d', '12h', '3h', '1h'].map(interval => (
+                      <label key={interval} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5a3a2a', background: 'rgba(122,47,47,0.04)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(122,47,47,0.1)' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={notifySettings.notify_intervals.includes(interval)}
+                          onChange={() => toggleInterval(interval)}
+                          style={{ accentColor: '#7A2F2F', transform: 'scale(1.2)' }}
+                        />
+                        {t(`dashboard.int${interval}`)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Language */}
+                <div>
+                  <h4 style={{ fontSize: '14px', color: '#7A2F2F', fontWeight: '700', marginBottom: '10px' }}>
+                    {t('dashboard.notifyLang')}
+                  </h4>
+                  <select 
+                    style={{ ...styles.modalSelect, width: '200px' }}
+                    value={notifySettings.notify_language}
+                    onChange={(e) => handleNotifyChange({ ...notifySettings, notify_language: e.target.value })}
+                  >
+                    <option value="cs">Čeština</option>
+                    <option value="en">English</option>
+                    <option value="ru">Русский</option>
+                    <option value="ukr">Українська</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </>
         )}

@@ -61,6 +61,7 @@ const en = {
     ruleLen: 'Minimum 8 characters',
     ruleUpper: 'At least 1 uppercase letter',
     ruleNum: 'At least 1 digit',
+    ruleSpecial: 'At least 1 special character',
     nextBtn: 'Next'
   },
   forgot: {
@@ -166,7 +167,23 @@ const en = {
     msgTgUnlink: 'Telegram unlinked',
     msgServerErr: 'Server connection error',
     msgWeakPwd: 'Password does not meet all requirements (min 8 chars, 1 uppercase, 1 digit)',
-    msgPwdMismatch: 'Passwords do not match'
+    msgPwdMismatch: 'Passwords do not match',
+    
+    // Notification Settings
+    notificationSettingsTitle: 'Notification Settings',
+    notifyChannels: 'Where to send notifications?',
+    notifyIntervals: 'When to send notifications?',
+    notifyLang: 'Notification language?',
+    notifyEmail: 'Email',
+    notifyTelegram: 'Telegram',
+    int14d: '14 days before',
+    int7d: '7 days before',
+    int3d: '3 days before',
+    int1d: '1 day before',
+    int12h: '12 hours before',
+    int3h: '3 hours before',
+    int1h: '1 hour before',
+    notifySaved: 'Settings saved'
   }
 };
 

@@ -61,6 +61,22 @@ const cs = {
     ruleLen: 'Minimálně 8 znaků',
     ruleUpper: 'Alespoň 1 velké písmeno',
     ruleNum: 'Alespoň 1 číslice',
+    ruleSpecial: 'Alespoň 1 speciální znak',
+    
+    // Notification Settings
+    notificationSettingsTitle: 'Nastavení upozornění',
+    notifyChannels: 'Kam zasílat upozornění?',
+    notifyIntervals: 'Kdy zasílat upozornění?',
+    notifyEmail: 'E-mail',
+    notifyTelegram: 'Telegram',
+    int14d: '14 dní předem',
+    int7d: '7 dní předem',
+    int3d: '3 dny předem',
+    int1d: '1 den předem',
+    int12h: '12 hodin předem',
+    int3h: '3 hodiny předem',
+    int1h: '1 hodinu předem',
+    notifySaved: 'Nastavení uložena',
     nextBtn: 'Dále'
   },
   forgot: {
@@ -165,8 +181,24 @@ const cs = {
     msgTgSuccess: 'Telegram úspěšně propojen',
     msgTgUnlink: 'Telegram odpojen',
     msgServerErr: 'Chyba připojení k serveru',
-    msgWeakPwd: 'Heslo nesplňuje všechny požadované podmínky (minimum 8 znaků, 1 velké písmeno, 1 číslice)',
-    msgPwdMismatch: 'Hesla se neshodují'
+    msgWeakPwd: 'Heslo nesplňuje všechny požadavky (min 8 znaků, 1 velké, 1 číslice, 1 speciální znak)',
+    msgPwdMismatch: 'Hesla se neshodují',
+    
+    // Notification Settings
+    notificationSettingsTitle: 'Nastavení upozornění',
+    notifyChannels: 'Kam zasílat upozornění?',
+    notifyIntervals: 'Kdy zasílat upozornění?',
+    notifyLang: 'Jazyk upozornění?',
+    notifyEmail: 'E-mail',
+    notifyTelegram: 'Telegram',
+    int14d: '14 dní předem',
+    int7d: '7 dní předem',
+    int3d: '3 dny předem',
+    int1d: '1 den předem',
+    int12h: '12 hodin předem',
+    int3h: '3 hodiny předem',
+    int1h: '1 hodinu předem',
+    notifySaved: 'Nastavení uložena'
   }
 };
 

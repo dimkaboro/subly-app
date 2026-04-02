@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -30,4 +30,15 @@ class TelegramSettings(Base):
     __tablename__ = "telegram_settings"
 
     chat_id = Column(String, primary_key=True, index=True)
-    language = Column(String, default="cs") # cs, en, ru, uk
+    language = Column(String, default="cs")
+
+class NotificationSettings(Base):
+    __tablename__ = "notification_settings"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    notify_email = Column(Boolean, default=True)
+    notify_telegram = Column(Boolean, default=True)
+    notify_intervals = Column(String, default="3d,1d") # comma-separated list like 14d,7d,3d,1d,12h,3h,1h
+    notify_language = Column(String, default="cs")
+
+    user = relationship("User", backref="notification_settings")

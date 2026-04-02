@@ -12,6 +12,8 @@ import os
 import asyncio
 import httpx
 import logging
+import smtplib
+from email.message import EmailMessage
 
 import models
 import schemas
@@ -34,7 +36,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(raw_minutes) if raw_minutes else 1440
 # Создаем таблицы в БД
 models.Base.metadata.create_all(bind=engine)
 
-# ─── Telegram notification helpers ──────────────────────────────────────────
+# ─── Telegram & Email notification helpers ─────────────────────────────────
 
 async def send_telegram_message(chat_id: str, text: str) -> None:
     """Send a message via Telegram Bot API."""
@@ -47,62 +49,106 @@ async def send_telegram_message(chat_id: str, text: str) -> None:
     except Exception as e:
         logger.error(f"Telegram HTTP error: {e}")
 
+SMTP_EMAIL = os.getenv("SMTP_EMAIL")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
+
+def send_email_message(to_email: str, subject: str, body: str) -> None:
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logger.info(f"📧 [MOCK EMAIL] To: {to_email} | Subject: {subject}\n{body}\n")
+        return
+    try:
+        msg = EmailMessage()
+        msg.set_content(body)
+        msg["Subject"] = subject
+        msg["From"] = f"Subly <{SMTP_EMAIL}>"
+        msg["To"] = to_email
+
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.send_message(msg)
+        logger.info(f"📧 Sent email to {to_email}")
+    except Exception as e:
+        logger.error(f"Email send error: {e}")
+
 
 NOTIFICATIONS_I18N = {
     "cs": {
-        "3_days": "⏰ <b>Subly: připomenutí platby</b>\n\nZa <b>3 dny</b> proběhne platba za:\n📌 <b>{name}</b> — {price} {currency}\n📅 Datum platby: {date}",
-        "1_day": "🚨 <b>Subly: zítra je platba!</b>\n\nZítra proběhne platba za:\n📌 <b>{name}</b> — {price} {currency}\n📅 Datum platby: {date}"
+        "reminder": "⏰ <b>Subly: připomenutí platby</b>\n\nZa <b>{time_str}</b> proběhne platba za:\n📌 <b>{name}</b> — {price} {currency}\n📅 Datum platby: {date}",
+        "times": {"14d": "14 dní", "7d": "7 dní", "3d": "3 dny", "1d": "1 den (zítra)", "12h": "12 hodin", "3h": "3 hodiny", "1h": "1 hodinu"}
     },
     "en": {
-        "3_days": "⏰ <b>Subly: Payment Reminder</b>\n\nIn <b>3 days</b>, you have a payment for:\n📌 <b>{name}</b> — {price} {currency}\n📅 Date: {date}",
-        "1_day": "🚨 <b>Subly: Payment Tomorrow!</b>\n\nTomorrow, you have a payment for:\n📌 <b>{name}</b> — {price} {currency}\n📅 Date: {date}"
+        "reminder": "⏰ <b>Subly: Payment Reminder</b>\n\nIn <b>{time_str}</b>, you have a payment for:\n📌 <b>{name}</b> — {price} {currency}\n📅 Date: {date}",
+        "times": {"14d": "14 days", "7d": "7 days", "3d": "3 days", "1d": "1 day (tomorrow)", "12h": "12 hours", "3h": "3 hours", "1h": "1 hour"}
     },
     "ru": {
-        "3_days": "⏰ <b>Subly: напоминание о платеже</b>\n\nЧерез <b>3 дня</b> будет списана оплата за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежа: {date}",
-        "1_day": "🚨 <b>Subly: завтра платёж!</b>\n\nЗавтра будет списана оплата за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежа: {date}"
+        "reminder": "⏰ <b>Subly: напоминание о платеже</b>\n\nЧерез <b>{time_str}</b> будет списана оплата за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежа: {date}",
+        "times": {"14d": "14 дней", "7d": "7 дней", "3d": "3 дня", "1d": "1 день (завтра)", "12h": "12 часов", "3h": "3 часа", "1h": "1 час"}
     },
     "ukr": {
-        "3_days": "⏰ <b>Subly: нагадування про платіж</b>\n\nЧерез <b>3 дні</b> буде списано оплату за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежу: {date}",
-        "1_day": "🚨 <b>Subly: завтра платіж!</b>\n\nЗавтра буде списано оплату за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежу: {date}"
+        "reminder": "⏰ <b>Subly: нагадування про платіж</b>\n\nЧерез <b>{time_str}</b> буде списано оплату за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежу: {date}",
+        "times": {"14d": "14 днів", "7d": "7 днів", "3d": "3 дні", "1d": "1 день (завтра)", "12h": "12 годин", "3h": "3 години", "1h": "1 годину"}
     }
 }
 
 async def check_upcoming_payments() -> None:
-    """Daily job: notify users about subscriptions due in 1 or 3 days."""
+    """Hourly job: notify users based on their settings."""
     db = SessionLocal()
     try:
-        today = date.today()
-        users = db.query(models.User).filter(models.User.telegram_chat_id.isnot(None)).all()
-        logger.info(f"[Scheduler] Checking payments for {len(users)} linked users...")
+        now = datetime.now()
+        users = db.query(models.User).all()
+        logger.info(f"[Scheduler] Checking payments for {len(users)} users (Hourly check)...")
 
         for user in users:
-            # 1. Fetch user's language setting
-            lang_setting = db.query(models.TelegramSettings).filter(models.TelegramSettings.chat_id == user.telegram_chat_id).first()
-            user_lang = lang_setting.language if lang_setting else "cs"
+            # Get notification settings
+            if user.notification_settings:
+                user_notifs = user.notification_settings[0]
+            else:
+                user_notifs = models.NotificationSettings(notify_email=True, notify_telegram=True, notify_intervals="3d,1d")
+            
+            intervals = user_notifs.notify_intervals.split(",")
+
+            # Используем язык из настроек уведомлений
+            user_lang = user_notifs.notify_language if hasattr(user_notifs, 'notify_language') and user_notifs.notify_language else "cs"
 
             for sub in user.subscriptions:
                 if not sub.nextPayment:
                     continue
                 try:
-                    payment_date = datetime.strptime(sub.nextPayment, "%Y-%m-%d").date()
+                    # Treat payment_date as 00:00:00 of that day
+                    payment_date = datetime.strptime(sub.nextPayment, "%Y-%m-%d")
                 except ValueError:
                     continue
 
-                days_left = (payment_date - today).days
+                delta = payment_date - now
+                total_hours = round(delta.total_seconds() / 3600)
 
-                formatted_date = payment_date.strftime('%d.%m.%Y')
+                matched_interval = None
+                if "14d" in intervals and total_hours == 14 * 24: matched_interval = "14d"
+                elif "7d" in intervals and total_hours == 7 * 24: matched_interval = "7d"
+                elif "3d" in intervals and total_hours == 3 * 24: matched_interval = "3d"
+                elif "1d" in intervals and total_hours == 24: matched_interval = "1d"
+                elif "12h" in intervals and total_hours == 12: matched_interval = "12h"
+                elif "3h" in intervals and total_hours == 3: matched_interval = "3h"
+                elif "1h" in intervals and total_hours == 1: matched_interval = "1h"
 
-                if days_left == 3:
-                    template = NOTIFICATIONS_I18N.get(user_lang, NOTIFICATIONS_I18N["cs"])["3_days"]
-                    msg = template.format(name=sub.name, price=sub.price, currency=sub.currency, date=formatted_date)
-                    await send_telegram_message(user.telegram_chat_id, msg)
-                    logger.info(f"  Sent 3-day reminder ({user_lang}) to {user.username} for {sub.name}")
-
-                elif days_left == 1:
-                    template = NOTIFICATIONS_I18N.get(user_lang, NOTIFICATIONS_I18N["cs"])["1_day"]
-                    msg = template.format(name=sub.name, price=sub.price, currency=sub.currency, date=formatted_date)
-                    await send_telegram_message(user.telegram_chat_id, msg)
-                    logger.info(f"  Sent 1-day reminder ({user_lang}) to {user.username} for {sub.name}")
+                # Check if it triggers now
+                if matched_interval:
+                    formatted_date = payment_date.strftime('%d.%m.%Y')
+                    t_data = NOTIFICATIONS_I18N.get(user_lang, NOTIFICATIONS_I18N["cs"])
+                    time_str = t_data["times"][matched_interval]
+                    msg_body = t_data["reminder"].format(time_str=time_str, name=sub.name, price=sub.price, currency=sub.currency, date=formatted_date)
+                    subject = f"Subly: {sub.name} - {time_str}"
+                    
+                    if user_notifs.notify_telegram and user.telegram_chat_id:
+                        await send_telegram_message(user.telegram_chat_id, msg_body)
+                    
+                    if user_notifs.notify_email and user.email:
+                        # strip html tags for simple text email
+                        import re
+                        plain_body = re.sub('<[^<]+?>', '', msg_body)
+                        send_email_message(user.email, subject, plain_body)
     finally:
         db.close()
 
@@ -115,18 +161,17 @@ async def lifespan(app: FastAPI):
     # 1. Start Telegram bot in background
     bot_task = asyncio.create_task(run_bot())
 
-    # 2. Start APScheduler — runs check_upcoming_payments every day at 09:00
+    # 2. Start APScheduler — runs check_upcoming_payments at the start of every hour (00, 01, 02...)
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         check_upcoming_payments,
         trigger="cron",
-        hour=9,
         minute=0,
-        id="daily_payment_check",
+        id="hourly_payment_check",
         replace_existing=True
     )
     scheduler.start()
-    logger.info("✅ APScheduler started — daily check at 09:00")
+    logger.info("✅ APScheduler started — hourly check at minute 0")
 
     yield  # App is running
 
@@ -357,3 +402,34 @@ def unlink_telegram(db: Session = Depends(get_db), current_user: models.User = D
     db.commit()
     
     return {"detail": "Telegram odpojen"}
+
+# ============ УВЕДОМЛЕНИЯ ============
+
+# 15. Получить настройки уведомлений
+@app.get("/api/me/notifications", response_model=schemas.NotificationSettingsResponse)
+def get_notification_settings(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    notif = db.query(models.NotificationSettings).filter(models.NotificationSettings.user_id == current_user.id).first()
+    if not notif:
+        return {"notify_email": True, "notify_telegram": True, "notify_intervals": "3d,1d", "notify_language": "cs"}
+    
+    # Чтобы избежать поломок, если колонка еще не создана
+    if not hasattr(notif, 'notify_language') or not notif.notify_language:
+        notif.notify_language = "cs"
+
+    return notif
+
+# 16. Обновить настройки уведомлений
+@app.put("/api/me/notifications", response_model=schemas.NotificationSettingsResponse)
+def update_notification_settings(data: schemas.NotificationSettingsUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    notif = db.query(models.NotificationSettings).filter(models.NotificationSettings.user_id == current_user.id).first()
+    if not notif:
+        notif = models.NotificationSettings(user_id=current_user.id)
+        db.add(notif)
+    
+    notif.notify_email = data.notify_email
+    notif.notify_telegram = data.notify_telegram
+    notif.notify_intervals = data.notify_intervals
+    notif.notify_language = data.notify_language
+    db.commit()
+    db.refresh(notif)
+    return notif
