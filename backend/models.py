@@ -25,3 +25,9 @@ class Subscription(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="subscriptions")
+
+class TelegramSettings(Base):
+    __tablename__ = "telegram_settings"
+
+    chat_id = Column(String, primary_key=True, index=True)
+    language = Column(String, default="cs") # cs, en, ru, uk

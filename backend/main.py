@@ -1,18 +1,29 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from jose import JWTError, jwt
 from dotenv import load_dotenv
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import os
+import asyncio
+import httpx
+import logging
 
 import models
 import schemas
 from database import engine, SessionLocal
+from telegram_bot import run_bot
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
@@ -23,7 +34,113 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(raw_minutes) if raw_minutes else 1440
 # Создаем таблицы в БД
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+# ─── Telegram notification helpers ──────────────────────────────────────────
+
+async def send_telegram_message(chat_id: str, text: str) -> None:
+    """Send a message via Telegram Bot API."""
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"})
+            if resp.status_code != 200:
+                logger.warning(f"Telegram send failed for {chat_id}: {resp.text}")
+    except Exception as e:
+        logger.error(f"Telegram HTTP error: {e}")
+
+
+NOTIFICATIONS_I18N = {
+    "cs": {
+        "3_days": "⏰ <b>Subly: připomenutí platby</b>\n\nZa <b>3 dny</b> proběhne platba za:\n📌 <b>{name}</b> — {price} {currency}\n📅 Datum platby: {date}",
+        "1_day": "🚨 <b>Subly: zítra je platba!</b>\n\nZítra proběhne platba za:\n📌 <b>{name}</b> — {price} {currency}\n📅 Datum platby: {date}"
+    },
+    "en": {
+        "3_days": "⏰ <b>Subly: Payment Reminder</b>\n\nIn <b>3 days</b>, you have a payment for:\n📌 <b>{name}</b> — {price} {currency}\n📅 Date: {date}",
+        "1_day": "🚨 <b>Subly: Payment Tomorrow!</b>\n\nTomorrow, you have a payment for:\n📌 <b>{name}</b> — {price} {currency}\n📅 Date: {date}"
+    },
+    "ru": {
+        "3_days": "⏰ <b>Subly: напоминание о платеже</b>\n\nЧерез <b>3 дня</b> будет списана оплата за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежа: {date}",
+        "1_day": "🚨 <b>Subly: завтра платёж!</b>\n\nЗавтра будет списана оплата за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежа: {date}"
+    },
+    "ukr": {
+        "3_days": "⏰ <b>Subly: нагадування про платіж</b>\n\nЧерез <b>3 дні</b> буде списано оплату за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежу: {date}",
+        "1_day": "🚨 <b>Subly: завтра платіж!</b>\n\nЗавтра буде списано оплату за:\n📌 <b>{name}</b> — {price} {currency}\n📅 Дата платежу: {date}"
+    }
+}
+
+async def check_upcoming_payments() -> None:
+    """Daily job: notify users about subscriptions due in 1 or 3 days."""
+    db = SessionLocal()
+    try:
+        today = date.today()
+        users = db.query(models.User).filter(models.User.telegram_chat_id.isnot(None)).all()
+        logger.info(f"[Scheduler] Checking payments for {len(users)} linked users...")
+
+        for user in users:
+            # 1. Fetch user's language setting
+            lang_setting = db.query(models.TelegramSettings).filter(models.TelegramSettings.chat_id == user.telegram_chat_id).first()
+            user_lang = lang_setting.language if lang_setting else "cs"
+
+            for sub in user.subscriptions:
+                if not sub.nextPayment:
+                    continue
+                try:
+                    payment_date = datetime.strptime(sub.nextPayment, "%Y-%m-%d").date()
+                except ValueError:
+                    continue
+
+                days_left = (payment_date - today).days
+
+                formatted_date = payment_date.strftime('%d.%m.%Y')
+
+                if days_left == 3:
+                    template = NOTIFICATIONS_I18N.get(user_lang, NOTIFICATIONS_I18N["cs"])["3_days"]
+                    msg = template.format(name=sub.name, price=sub.price, currency=sub.currency, date=formatted_date)
+                    await send_telegram_message(user.telegram_chat_id, msg)
+                    logger.info(f"  Sent 3-day reminder ({user_lang}) to {user.username} for {sub.name}")
+
+                elif days_left == 1:
+                    template = NOTIFICATIONS_I18N.get(user_lang, NOTIFICATIONS_I18N["cs"])["1_day"]
+                    msg = template.format(name=sub.name, price=sub.price, currency=sub.currency, date=formatted_date)
+                    await send_telegram_message(user.telegram_chat_id, msg)
+                    logger.info(f"  Sent 1-day reminder ({user_lang}) to {user.username} for {sub.name}")
+    finally:
+        db.close()
+
+
+# ─── FastAPI lifespan (startup / shutdown) ───────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup ---
+    # 1. Start Telegram bot in background
+    bot_task = asyncio.create_task(run_bot())
+
+    # 2. Start APScheduler — runs check_upcoming_payments every day at 09:00
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        check_upcoming_payments,
+        trigger="cron",
+        hour=9,
+        minute=0,
+        id="daily_payment_check",
+        replace_existing=True
+    )
+    scheduler.start()
+    logger.info("✅ APScheduler started — daily check at 09:00")
+
+    yield  # App is running
+
+    # --- Shutdown ---
+    scheduler.shutdown(wait=False)
+    bot_task.cancel()
+    try:
+        await bot_task
+    except asyncio.CancelledError:
+        pass
+    logger.info("🛑 Scheduler and bot stopped.")
+
+
+app = FastAPI(lifespan=lifespan)
 
 # 1. Настройка CORS
 app.add_middleware(

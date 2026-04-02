@@ -728,6 +728,31 @@ function Dashboard() {
                 {t('dashboard.tgBotDesc')}
               </p>
 
+              {/* Step-by-step instruction */}
+              <div style={{
+                background: 'rgba(122, 47, 47, 0.06)',
+                border: '1px solid rgba(122, 47, 47, 0.15)',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                marginBottom: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: '#5a3a2a' }}>
+                  <span style={{ fontWeight: '800', color: '#7A2F2F', minWidth: '20px' }}>1.</span>
+                  <span>{t('dashboard.tgStep1')} <a href="https://t.me/sblcz_Bot" target="_blank" rel="noreferrer" style={{ color: '#7A2F2F', fontWeight: '700', textDecoration: 'none' }}>@sblcz_Bot</a></span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: '#5a3a2a' }}>
+                  <span style={{ fontWeight: '800', color: '#7A2F2F', minWidth: '20px' }}>2.</span>
+                  <span>{t('dashboard.tgStep2')} <code style={{ background: 'rgba(122,47,47,0.1)', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>/start</code></span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: '#5a3a2a' }}>
+                  <span style={{ fontWeight: '800', color: '#7A2F2F', minWidth: '20px' }}>3.</span>
+                  <span>{t('dashboard.tgStep3')}</span>
+                </div>
+              </div>
+
               {profile?.telegram_chat_id ? (
                 <div style={styles.settingsTelegramLinked}>
                   <div style={styles.settingsTelegramStatus}>
@@ -740,16 +765,13 @@ function Dashboard() {
                 <form onSubmit={handleLinkTelegram} style={styles.settingsTelegramForm}>
                   <div style={styles.settingsTelegramInputRow}>
                     <input
-                      type="text" required placeholder="ID"
+                      type="text" required placeholder={t('dashboard.tgPlaceholder')}
                       style={{ ...styles.modalInput, flex: 1 }}
                       value={telegramId}
                       onChange={(e) => setTelegramId(e.target.value)}
                     />
                     <button type="submit" style={styles.settingsSubmitBtn}>{t('dashboard.linkTgBtn')}</button>
                   </div>
-                  <p style={styles.settingsTelegramHint}>
-                    {t('dashboard.tgHint')}
-                  </p>
                 </form>
               )}
             </div>
