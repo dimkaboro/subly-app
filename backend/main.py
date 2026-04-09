@@ -367,6 +367,54 @@ def resend_verification(data: schemas.ResendVerification, db: Session = Depends(
     logger.info(f"[Resend] New verification code for {user.email}: {code}")
     return {"detail": "code_sent"}
 
+# 5c. Забыл пароль — отправить код на email
+@app.post("/forgot-password")
+def forgot_password(data: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == data.email).first()
+    # Не раскрываем, существует ли пользователь — всегда отвечаем одинаково
+    if not user:
+        return {"detail": "code_sent"}
+    
+    # Rate-limit: раз в 60 секунд
+    if user.reset_code_expires:
+        time_left = user.reset_code_expires - datetime.utcnow()
+        if time_left.total_seconds() > 14 * 60:
+            raise HTTPException(status_code=429, detail="too_many_requests")
+    
+    code = generate_verification_code()
+    expires = datetime.utcnow() + timedelta(minutes=15)
+    user.reset_code = code
+    user.reset_code_expires = expires
+    db.commit()
+    
+    subject = "Subly – obnovení hesla / Password Reset"
+    body = (
+        f"Váš kód pro obnovení hesla v Subly je: {code}\n"
+        f"Your Subly password reset code is: {code}\n\n"
+        f"Kód je platný 15 minut / Code is valid for 15 minutes."
+    )
+    send_email_message(user.email, subject, body)
+    logger.info(f"[ForgotPwd] Reset code for {user.email}: {code}")
+    return {"detail": "code_sent"}
+
+# 5d. Сброс пароля — проверить код и сохранить новый пароль
+@app.post("/reset-password")
+def reset_password(data: schemas.ResetPassword, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Uživatel nenalezen")
+    if not user.reset_code or user.reset_code != data.code:
+        raise HTTPException(status_code=400, detail="wrong_code")
+    if not user.reset_code_expires or datetime.utcnow() > user.reset_code_expires:
+        raise HTTPException(status_code=400, detail="code_expired")
+    
+    user.password = get_password_hash(data.new_password)
+    user.reset_code = None
+    user.reset_code_expires = None
+    db.commit()
+    logger.info(f"[ResetPwd] Password changed for {user.email}")
+    return {"detail": "password_reset"}
+
 # 6. Получить подписки текущего пользователя
 @app.get("/api/subscriptions", response_model=list[schemas.SubscriptionResponse])
 def get_subscriptions(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):

@@ -52,6 +52,26 @@ class VerifyEmail(BaseModel):
 class ResendVerification(BaseModel):
     email: EmailStr
 
+# ---СХЕМЫ ДЛЯ СБРОСА ПАРОЛЯ---
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPassword(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Heslo musí mít alespoň 8 znaků')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Heslo musí obsahovat alespoň jedno velké písmeno')
+        if not re.search(r'\d', v):
+            raise ValueError('Heslo musí obsahovat alespoň jednu číslici')
+        return v
+
 # ---СХЕМЫ ДЛЯ ПОДПИСОК---
 class SubscriptionBase(BaseModel):
     name: str
