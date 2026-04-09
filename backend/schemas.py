@@ -44,6 +44,14 @@ class UserResponse(BaseModel):
 class TokenData(BaseModel):
     email: str | None = None
 
+# ---СХЕМЫ ДЛЯ ВЕРИФИКАЦИИ EMAIL---
+class VerifyEmail(BaseModel):
+    email: EmailStr
+    code: str
+
+class ResendVerification(BaseModel):
+    email: EmailStr
+
 # ---СХЕМЫ ДЛЯ ПОДПИСОК---
 class SubscriptionBase(BaseModel):
     name: str

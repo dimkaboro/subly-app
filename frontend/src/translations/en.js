@@ -78,6 +78,20 @@ const en = {
     btnStep2: 'Save new password',
     backToLogin: 'Back to login'
   },
+  verify: {
+    title: 'Email Verification',
+    subtitle: 'We sent a code to your email. Enter it below to complete registration.',
+    phCode: '6-digit code',
+    btnVerify: 'Verify',
+    resend: 'Resend code',
+    resendIn: 'Resend in {sec}s',
+    success: 'Email verified! Redirecting...',
+    errWrongCode: 'Wrong code',
+    errExpired: 'Code expired. Please request a new one.',
+    errTooMany: 'Please wait before resending.',
+    errServer: 'Server connection error',
+    notVerifiedHint: 'Please verify your email.'
+  },
   dashboard: {
     greetingMorning: 'Good morning,',
     greetingDay: 'Good afternoon,',

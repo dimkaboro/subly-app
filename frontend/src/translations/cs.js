@@ -93,6 +93,20 @@ const cs = {
     btnStep2: 'Uložit nové heslo',
     backToLogin: 'Zpět na přihlášení'
   },
+  verify: {
+    title: 'Ověření e-mailu',
+    subtitle: 'Poslali jsme vám kód na e-mail. Zadejte ho níže pro dokončení registrace.',
+    phCode: '6místný kód',
+    btnVerify: 'Potvrdit',
+    resend: 'Odeslat kód znovu',
+    resendIn: 'Opětovné odeslání za {sec} s',
+    success: 'E-mail úspěšně ověřen! Přesměrování...',
+    errWrongCode: 'Nesprávný kód',
+    errExpired: 'Platnost kódu vypršela. Vyžádejte nový.',
+    errTooMany: 'Prosím počkejte před opětovným odesíláním.',
+    errServer: 'Chyba připojení k serveru',
+    notVerifiedHint: 'Ověřte svůj e-mail.'
+  },
   dashboard: {
     greetingMorning: 'Dobré ráno,',
     greetingDay: 'Dobrý den,',

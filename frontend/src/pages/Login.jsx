@@ -44,8 +44,12 @@ function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        // 👇 ПРОВЕРКА: если пришел массив (422), берем текст. Если строка (401), берем её.
         const rawError = data.detail;
+        if (rawError === 'email_not_verified') {
+          // Направляем на страницу верификации
+          navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+          return;
+        }
         if (Array.isArray(rawError)) {
           setErrorMsg(rawError[0].msg);
         } else {

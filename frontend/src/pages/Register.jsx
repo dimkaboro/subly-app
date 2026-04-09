@@ -82,10 +82,10 @@ function Register() {
         setSuccessMsg(t('register.success'));
         setFormData({ username: '', email: '', password: '', repeat_password: '' });
         
-        // Переход на страницу логина через 2 секунды
+        // Переход на страницу верификации email через 1 секунду
         setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+          navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        }, 1000);
       }
     } catch (error) {
       setErrorMsg(t('register.errServer'));

@@ -13,6 +13,7 @@ import About from './pages/About';
 import Services from './pages/Services'; // 👇 Подключили страницу услуг
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
+import VerifyEmail from './pages/VerifyEmail';
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </LanguageProvider>

@@ -5,6 +5,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, date
+import random
+import string
 from jose import JWTError, jwt
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -33,8 +35,8 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 raw_minutes = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(raw_minutes) if raw_minutes else 1440
 
-# Создаем таблицы в БД
-models.Base.metadata.create_all(bind=engine)
+# (Таблицы теперь создаются и мигрируются через Alembic)
+# models.Base.metadata.create_all(bind=engine)
 
 # ─── Telegram & Email notification helpers ─────────────────────────────────
 
@@ -235,6 +237,22 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
+# ─── Email Verification Helpers ───────────────────────────────────────────────
+
+def generate_verification_code() -> str:
+    """Generate a random 6-digit numeric code."""
+    return ''.join(random.choices(string.digits, k=6))
+
+def send_verification_email(to_email: str, code: str) -> None:
+    """Send verification code email."""
+    subject = "Subly – ověření e-mailu / Email Verification"
+    body = (
+        f"Váš ověřovací kód pro Subly je: {code}\n"
+        f"Your Subly verification code is: {code}\n\n"
+        f"Kód je platný 15 minut / Code is valid for 15 minutes."
+    )
+    send_email_message(to_email, subject, body)
+
 # 4. Маршрут регистрации
 @app.post("/register", response_model=schemas.UserResponse)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -250,15 +268,24 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     # Шифрование и сохранение
     hashed_password = get_password_hash(user.password)
+    code = generate_verification_code()
+    expires = datetime.utcnow() + timedelta(minutes=15)
     new_user = models.User(
         username=user.username, 
         email=user.email,
-        password=hashed_password
+        password=hashed_password,
+        is_verified=False,
+        verification_code=code,
+        verification_code_expires=expires
     )
     
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Отправляем письмо с кодом
+    send_verification_email(new_user.email, code)
+    logger.info(f"[Register] Verification code for {new_user.email}: {code}")
     
     return new_user
 
@@ -274,11 +301,18 @@ def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
     # Ищем пользователя в базе
     user = db.query(models.User).filter(models.User.email == user_data.email).first()
     
-    # Проверяем пользователя и пароль (исправлено на user.password)
+    # Проверяем пользователя и пароль
     if not user or not verify_password(user_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail="Nesprávný e-mail nebo heslo"
+        )
+    
+    # Проверяем подтверждение email
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="email_not_verified"
         )
     
     token = create_access_token(data={"sub": user.email})
@@ -288,6 +322,50 @@ def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer", 
         "username": user.username
     }
+
+# 5a. Верификация Email по коду
+@app.post("/api/verify-email")
+def verify_email(data: schemas.VerifyEmail, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Uživatel nenalezen")
+    if user.is_verified:
+        return {"detail": "already_verified"}
+    if not user.verification_code or user.verification_code != data.code:
+        raise HTTPException(status_code=400, detail="wrong_code")
+    if not user.verification_code_expires or datetime.utcnow() > user.verification_code_expires:
+        raise HTTPException(status_code=400, detail="code_expired")
+    
+    user.is_verified = True
+    user.verification_code = None
+    user.verification_code_expires = None
+    db.commit()
+    logger.info(f"[Verify] {user.email} verified successfully")
+    return {"detail": "verified"}
+
+# 5b. Повторная отправка кода
+@app.post("/api/resend-verification")
+def resend_verification(data: schemas.ResendVerification, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Uživatel nenalezen")
+    if user.is_verified:
+        return {"detail": "already_verified"}
+    # Rate-limit: не чаще чем раз в 60 секунд
+    if user.verification_code_expires:
+        time_left = user.verification_code_expires - datetime.utcnow()
+        # Если код выдан менее 14 минут назад (из 15) — ещё не прошло 60 сек с последней отправки
+        if time_left.total_seconds() > 14 * 60:
+            raise HTTPException(status_code=429, detail="too_many_requests")
+    
+    code = generate_verification_code()
+    expires = datetime.utcnow() + timedelta(minutes=15)
+    user.verification_code = code
+    user.verification_code_expires = expires
+    db.commit()
+    send_verification_email(user.email, code)
+    logger.info(f"[Resend] New verification code for {user.email}: {code}")
+    return {"detail": "code_sent"}
 
 # 6. Получить подписки текущего пользователя
 @app.get("/api/subscriptions", response_model=list[schemas.SubscriptionResponse])
