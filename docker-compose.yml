@@ -28,6 +28,31 @@ services:
     depends_on:
       - db
 
+  backend:
+    build: ./backend
+    container_name: sub_manager_backend
+    restart: always
+    command: sh -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/subscriptions_db
+      # You can add other env variables here like TELEGRAM_BOT_TOKEN, SECRET_KEY, etc.
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: sub_manager_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   pgadmin_data:
