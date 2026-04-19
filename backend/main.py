@@ -36,13 +36,13 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 raw_minutes = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(raw_minutes) if raw_minutes else 1440
 
-# (Таблицы теперь создаются и мигрируются через Alembic)
+# Tabulky se vytvářejí přes Alembic migrace
 # models.Base.metadata.create_all(bind=engine)
 
-# ─── Telegram & Email notification helpers ─────────────────────────────────
+# ─── Odesílání upozornění (Telegram + Email) ───────────────────────────────────
 
 async def send_telegram_message(chat_id: str, text: str) -> None:
-    """Send a message via Telegram Bot API."""
+    """Odeslání zprávy přes Telegram Bot API."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -96,7 +96,7 @@ NOTIFICATIONS_I18N = {
 }
 
 async def check_upcoming_payments() -> None:
-    """Hourly job: notify users based on their settings."""
+    """Hodinový úkol: kontrola předplatných a odesílání upozornění."""
     db = SessionLocal()
     try:
         now = datetime.now()
@@ -104,7 +104,7 @@ async def check_upcoming_payments() -> None:
         logger.info(f"[Scheduler] Checking payments for {len(users)} users (Hourly check)...")
 
         for user in users:
-            # Get notification settings
+            # Načtení nastavení upozornění
             if user.notification_settings:
                 user_notifs = user.notification_settings[0]
             else:
@@ -112,20 +112,20 @@ async def check_upcoming_payments() -> None:
             
             intervals = user_notifs.notify_intervals.split(",")
 
-            # Используем язык из настроек уведомлений
+            # Jazyk upozornění z nastavení uživatele
             user_lang = user_notifs.notify_language if hasattr(user_notifs, 'notify_language') and user_notifs.notify_language else "cs"
 
             for sub in user.subscriptions:
                 if not sub.nextPayment:
                     continue
                 try:
-                    # Treat payment_date as 00:00:00 of that day
+                    # Parsování data platby
                     payment_date = datetime.strptime(sub.nextPayment, "%Y-%m-%d")
                 except ValueError:
                     continue
 
-                # --- АВТО-ПРОДЛЕНИЕ ПОДПИСКИ ---
-                # Если дата платежа уже прошла относительно текущего дня, сдвигаем её
+                # --- Automatické posunutí data ---
+                # Pokud datum platby již prošlo, posuneme ho dopředu
                 if payment_date.date() < now.date():
                     while payment_date.date() < now.date():
                         if sub.cycle == "Měsíčně":
@@ -137,13 +137,13 @@ async def check_upcoming_payments() -> None:
                         elif sub.cycle == "Ročně":
                             payment_date = payment_date.replace(year=payment_date.year + 1)
                         else:
-                            # Если цикл неизвестен, не зацикливаемся
+                            # Neznámý cyklus — přeskočíme
                             break 
                     
                     sub.nextPayment = payment_date.strftime("%Y-%m-%d")
                     db.commit()
                     logger.info(f"[Scheduler] Auto-rolled over '{sub.name}' for user {user.email} to {sub.nextPayment}")
-                # -------------------------------
+                # -----------------------------------
 
                 delta = payment_date - now
                 total_hours = round(delta.total_seconds() / 3600)
@@ -157,7 +157,7 @@ async def check_upcoming_payments() -> None:
                 elif "3h" in intervals and total_hours == 3: matched_interval = "3h"
                 elif "1h" in intervals and total_hours == 1: matched_interval = "1h"
 
-                # Check if it triggers now
+                # Pokud se čas shoduje s intervaly uživatele — odeslat
                 if matched_interval:
                     formatted_date = payment_date.strftime('%d.%m.%Y')
                     t_data = NOTIFICATIONS_I18N.get(user_lang, NOTIFICATIONS_I18N["cs"])
@@ -169,7 +169,7 @@ async def check_upcoming_payments() -> None:
                         await send_telegram_message(user.telegram_chat_id, msg_body)
                     
                     if user_notifs.notify_email and user.email:
-                        # strip html tags for simple text email
+                        # Odstranění HTML tagů pro textový e-mail
                         import re
                         plain_body = re.sub('<[^<]+?>', '', msg_body)
                         send_email_message(user.email, subject, plain_body)
@@ -177,15 +177,15 @@ async def check_upcoming_payments() -> None:
         db.close()
 
 
-# ─── FastAPI lifespan (startup / shutdown) ───────────────────────────────────
+# ─── Startup / Shutdown aplikace ─────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- Startup ---
-    # 1. Start Telegram bot in background
+    # --- Start ---
+    # Spustíme Telegram bota na pozadí
     bot_task = asyncio.create_task(run_bot())
 
-    # 2. Start APScheduler — runs check_upcoming_payments at the start of every hour (00, 01, 02...)
+    # Plánovač — každou hodinu kontroluje předplatné
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         check_upcoming_payments,
@@ -199,7 +199,7 @@ async def lifespan(app: FastAPI):
 
     yield  # App is running
 
-    # --- Shutdown ---
+    # --- Ukončení ---
     scheduler.shutdown(wait=False)
     bot_task.cancel()
     try:
@@ -211,7 +211,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# 1. Настройка CORS
+# CORS — povolení požadavků z frontendu
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"], 
@@ -220,7 +220,7 @@ app.add_middleware(
     allow_headers=["*"], 
 )
 
-# 2. Настройка шифрования паролей
+# Hašování hesel (bcrypt)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_password_hash(password):
@@ -229,7 +229,7 @@ def get_password_hash(password):
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
-# 3. Подключение к БД
+# Připojení k databázi (session)
 def get_db():
     db = SessionLocal()
     try:
@@ -237,7 +237,7 @@ def get_db():
     finally:
         db.close()
 
-# 3.1 OAuth2 Scheme
+# OAuth2 — čtení tokenu z hlavičky
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -259,14 +259,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
-# ─── Email Verification Helpers ───────────────────────────────────────────────
+# ─── Ověření e-mailu ───────────────────────────────────────────────────────────
 
 def generate_verification_code() -> str:
-    """Generate a random 6-digit numeric code."""
+    """Vygenerování náhodného 6místného kódu."""
     return ''.join(random.choices(string.digits, k=6))
 
 def send_verification_email(to_email: str, code: str) -> None:
-    """Send verification code email."""
+    """Odeslání ověřovacího kódu na e-mail."""
     subject = "Subly – ověření e-mailu / Email Verification"
     body = (
         f"Váš ověřovací kód pro Subly je: {code}\n"
@@ -275,20 +275,20 @@ def send_verification_email(to_email: str, code: str) -> None:
     )
     send_email_message(to_email, subject, body)
 
-# 4. Маршрут регистрации
+# Registrace uživatele
 @app.post("/register", response_model=schemas.UserResponse)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    # Проверка email
+    # Kontrola unikátnosti e-mailu
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Uživatel s tímto e-mailem již existuje")
     
-    # Проверка никнейма
+    # Kontrola unikátnosti přezdívky
     db_username = db.query(models.User).filter(models.User.username == user.username).first()
     if db_username:
         raise HTTPException(status_code=400, detail="Tato přezdívka је již obsazená")
 
-    # Шифрование и сохранение
+    # Hašování hesla a uložení
     hashed_password = get_password_hash(user.password)
     code = generate_verification_code()
     expires = datetime.utcnow() + timedelta(minutes=15)
@@ -305,7 +305,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    # Отправляем письмо с кодом
+    # Odeslání ověřovacího kódu na e-mail
     send_verification_email(new_user.email, code)
     logger.info(f"[Register] Verification code for {new_user.email}: {code}")
     
@@ -317,20 +317,20 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# 5. Маршрут авторизации (Login)
+# Přihlášení (Login)
 @app.post("/login")
 def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
-    # Ищем пользователя в базе
+    # Hledání uživatele v databázi
     user = db.query(models.User).filter(models.User.email == user_data.email).first()
     
-    # Проверяем пользователя и пароль
+    # Ověření hesla
     if not user or not verify_password(user_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail="Nesprávný e-mail nebo heslo"
         )
     
-    # Проверяем подтверждение email
+    # Kontrola ověření e-mailu
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -345,7 +345,7 @@ def login(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
         "username": user.username
     }
 
-# 5a. Верификация Email по коду
+# Ověření e-mailu kódem
 @app.post("/api/verify-email")
 def verify_email(data: schemas.VerifyEmail, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.email).first()
@@ -365,7 +365,7 @@ def verify_email(data: schemas.VerifyEmail, db: Session = Depends(get_db)):
     logger.info(f"[Verify] {user.email} verified successfully")
     return {"detail": "verified"}
 
-# 5b. Повторная отправка кода
+# Opakované odeslání kódu
 @app.post("/api/resend-verification")
 def resend_verification(data: schemas.ResendVerification, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.email).first()
@@ -373,10 +373,10 @@ def resend_verification(data: schemas.ResendVerification, db: Session = Depends(
         raise HTTPException(status_code=404, detail="Uživatel nenalezen")
     if user.is_verified:
         return {"detail": "already_verified"}
-    # Rate-limit: не чаще чем раз в 60 секунд
+    # Rate-limit: max 1x za 60 sekund
     if user.verification_code_expires:
         time_left = user.verification_code_expires - datetime.utcnow()
-        # Если код выдан менее 14 минут назад (из 15) — ещё не прошло 60 сек с последней отправки
+        # Pokud kód vydán méně než před 60 sek
         if time_left.total_seconds() > 14 * 60:
             raise HTTPException(status_code=429, detail="too_many_requests")
     
@@ -389,15 +389,15 @@ def resend_verification(data: schemas.ResendVerification, db: Session = Depends(
     logger.info(f"[Resend] New verification code for {user.email}: {code}")
     return {"detail": "code_sent"}
 
-# 5c. Забыл пароль — отправить код на email
+# Zapomenuté heslo — odeslání kódu na e-mail
 @app.post("/forgot-password")
 def forgot_password(data: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.email).first()
-    # Не раскрываем, существует ли пользователь — всегда отвечаем одинаково
+    # Neprozádíme, jestli uživatel existuje — vždy odpovíme stejně
     if not user:
         return {"detail": "code_sent"}
     
-    # Rate-limit: раз в 60 секунд
+    # Rate-limit: max 1x za 60 sekund
     if user.reset_code_expires:
         time_left = user.reset_code_expires - datetime.utcnow()
         if time_left.total_seconds() > 14 * 60:
@@ -419,7 +419,7 @@ def forgot_password(data: schemas.ForgotPasswordRequest, db: Session = Depends(g
     logger.info(f"[ForgotPwd] Reset code for {user.email}: {code}")
     return {"detail": "code_sent"}
 
-# 5d. Сброс пароля — проверить код и сохранить новый пароль
+# Reset hesla — ověření kódu a uložení nového
 @app.post("/reset-password")
 def reset_password(data: schemas.ResetPassword, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.email).first()
@@ -437,12 +437,12 @@ def reset_password(data: schemas.ResetPassword, db: Session = Depends(get_db)):
     logger.info(f"[ResetPwd] Password changed for {user.email}")
     return {"detail": "password_reset"}
 
-# 6. Получить подписки текущего пользователя
+# Získání seznamu předplatných
 @app.get("/api/subscriptions", response_model=list[schemas.SubscriptionResponse])
 def get_subscriptions(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return current_user.subscriptions
 
-# 7. Создать подписку
+# Vytvoření předplatného
 @app.post("/api/subscriptions", response_model=schemas.SubscriptionResponse)
 def create_subscription(sub: schemas.SubscriptionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     new_sub = models.Subscription(
@@ -458,7 +458,7 @@ def create_subscription(sub: schemas.SubscriptionCreate, db: Session = Depends(g
     db.refresh(new_sub)
     return new_sub
 
-# 8. Удалить подписку
+# Smazání předplatného
 @app.delete("/api/subscriptions/{sub_id}")
 def delete_subscription(sub_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     sub_query = db.query(models.Subscription).filter(
@@ -473,7 +473,7 @@ def delete_subscription(sub_id: int, db: Session = Depends(get_db), current_user
     db.commit()
     return {"detail": "Smazáno úspěšně"}
 
-# 9. Обновить подписку
+# Úprava předplatného
 @app.put("/api/subscriptions/{sub_id}", response_model=schemas.SubscriptionResponse)
 def update_subscription(sub_id: int, sub_data: schemas.SubscriptionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     sub = db.query(models.Subscription).filter(
@@ -493,21 +493,21 @@ def update_subscription(sub_id: int, sub_data: schemas.SubscriptionCreate, db: S
     db.refresh(sub)
     return sub
 
-# ============ НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ ============
+# ============ NASTAVENÍ UŽIVATELE ============
 
-# 10. Получить профиль текущего пользователя
+# Profil uživatele
 @app.get("/api/me", response_model=schemas.UserProfileResponse)
 def get_profile(current_user: models.User = Depends(get_current_user)):
     return current_user
 
-# 11. Изменить email
+# Změna e-mailu
 @app.put("/api/me/email")
 def change_email(data: schemas.ChangeEmail, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # Проверяем текущий пароль
+    # Ověření aktuálního hesla
     if not verify_password(data.password, current_user.password):
         raise HTTPException(status_code=400, detail="Nesprávné heslo")
     
-    # Проверяем уникальность нового email
+    # Kontrola unikátnosti nového e-mailu
     existing = db.query(models.User).filter(models.User.email == data.new_email).first()
     if existing and existing.id != current_user.id:
         raise HTTPException(status_code=400, detail="Tento e-mail je již používán")
@@ -516,25 +516,25 @@ def change_email(data: schemas.ChangeEmail, db: Session = Depends(get_db), curre
     db.commit()
     db.refresh(current_user)
     
-    # Выпускаем новый токен с новым email
+    # Vydáme nový token s novým e-mailem
     new_token = create_access_token(data={"sub": current_user.email})
     
     return {"detail": "E-mail úspěšně změněn", "access_token": new_token, "email": current_user.email}
 
-# 12. Изменить пароль
+# Změna hesla
 @app.put("/api/me/password")
 def change_password(data: schemas.ChangePassword, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # Проверяем текущий пароль
+    # Ověření aktuálního hesla
     if not verify_password(data.current_password, current_user.password):
         raise HTTPException(status_code=400, detail="Nesprávné aktuální heslo")
     
-    # Хешируем и сохраняем новый пароль
+    # Hašování a uložení nového hesla
     current_user.password = get_password_hash(data.new_password)
     db.commit()
     
     return {"detail": "Heslo úspěšně změněno"}
 
-# 13. Привязать Telegram
+# Propojení Telegramu
 @app.post("/api/me/telegram")
 def link_telegram(data: schemas.TelegramLink, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     current_user.telegram_chat_id = data.telegram_chat_id
@@ -543,7 +543,7 @@ def link_telegram(data: schemas.TelegramLink, db: Session = Depends(get_db), cur
     
     return {"detail": "Telegram úspěšně propojen", "telegram_chat_id": current_user.telegram_chat_id}
 
-# 14. Отвязать Telegram
+# Odpojení Telegramu
 @app.delete("/api/me/telegram")
 def unlink_telegram(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     current_user.telegram_chat_id = None
@@ -551,22 +551,22 @@ def unlink_telegram(db: Session = Depends(get_db), current_user: models.User = D
     
     return {"detail": "Telegram odpojen"}
 
-# ============ УВЕДОМЛЕНИЯ ============
+# ============ UPOZORNĚNÍ ============
 
-# 15. Получить настройки уведомлений
+# Získání nastavení upozornění
 @app.get("/api/me/notifications", response_model=schemas.NotificationSettingsResponse)
 def get_notification_settings(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     notif = db.query(models.NotificationSettings).filter(models.NotificationSettings.user_id == current_user.id).first()
     if not notif:
         return {"notify_email": True, "notify_telegram": True, "notify_intervals": "3d,1d", "notify_language": "cs"}
     
-    # Чтобы избежать поломок, если колонка еще не создана
+    # Fallback pokud sloupec ještě neexistuje
     if not hasattr(notif, 'notify_language') or not notif.notify_language:
         notif.notify_language = "cs"
 
     return notif
 
-# 16. Обновить настройки уведомлений
+# Aktualizace nastavení upozornění
 @app.put("/api/me/notifications", response_model=schemas.NotificationSettingsResponse)
 def update_notification_settings(data: schemas.NotificationSettingsUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     notif = db.query(models.NotificationSettings).filter(models.NotificationSettings.user_id == current_user.id).first()

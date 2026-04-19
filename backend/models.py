@@ -43,7 +43,7 @@ class NotificationSettings(Base):
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     notify_email = Column(Boolean, default=True)
     notify_telegram = Column(Boolean, default=True)
-    notify_intervals = Column(String, default="3d,1d") # comma-separated list like 14d,7d,3d,1d,12h,3h,1h
+    notify_intervals = Column(String, default="3d,1d")  # seznam oddělený čárkami
     notify_language = Column(String, default="cs")
 
     user = relationship("User", backref="notification_settings")

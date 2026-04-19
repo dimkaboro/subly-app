@@ -8,7 +8,7 @@ from database import Base
 from main import app, get_db
 import models
 
-# Инициализация тестовой in-memory базы данных SQLite
+# Testovací in-memory databáze (SQLite)
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
@@ -18,7 +18,7 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Подменяем зависимость подключения к БД
+# Přepnutí na testovací DB
 def override_get_db():
     try:
         db = TestingSessionLocal()
@@ -32,20 +32,20 @@ client = TestClient(app)
 
 from unittest.mock import patch
 
-# Фикстура для пересоздания таблиц перед каждым тестом
+# Fixture: převytvoření tabulek před každým testem
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
-# Фикстура для блокировки реальной отправки писем при тестировании
+# Fixture: blokujeme skutečné odesílání e-mailů
 @pytest.fixture(autouse=True)
 def mock_emails():
     with patch("main.send_verification_email"), patch("main.send_email_message"):
         yield
 
-# Настройка тестовых данных
+# Testovací data
 test_user = {
     "username": "testuser",
     "email": "test@example.com",
@@ -54,7 +54,7 @@ test_user = {
 }
 
 def test_register_user_success():
-    """Тест 1: Успешная регистрация пользователя"""
+    """Test 1: Úspěšná registrace uživatele"""
     response = client.post("/register", json=test_user)
     assert response.status_code == 200
     data = response.json()
@@ -63,14 +63,14 @@ def test_register_user_success():
     assert "id" in data
 
 def test_register_duplicate_email():
-    """Тест 2: Ошибка при регистрации с существующим email"""
-    client.post("/register", json=test_user) # Первая регистрация
-    response = client.post("/register", json=test_user) # Попытка дубля
+    """Test 2: Chyba při duplicitním e-mailu"""
+    client.post("/register", json=test_user)  # První registrace
+    response = client.post("/register", json=test_user)  # Pokus o duplikát
     assert response.status_code == 400
     assert response.json()["detail"] == "Uživatel s tímto e-mailem již existuje"
 
 def test_login_unverified_user():
-    """Тест 3: Запрет входа без подтверждения почты (email_not_verified)"""
+    """Test 3: Zákaz přihlášení bez ověřeného e-mailu"""
     client.post("/register", json=test_user)
     response = client.post("/login", json={
         "email": test_user["email"],
@@ -80,7 +80,7 @@ def test_login_unverified_user():
     assert response.json()["detail"] == "email_not_verified"
 
 def test_verify_email():
-    """Тест 4: Успешная верификация почты"""
+    """Test 4: Úspěšné ověření e-mailu"""
     client.post("/register", json=test_user)
     
     db = TestingSessionLocal()
@@ -96,7 +96,7 @@ def test_verify_email():
     assert response_verify.json()["detail"] == "verified"
 
 def test_login_verified_user():
-    """Тест 5: Успешный вход после верификации"""
+    """Test 5: Úspěšné přihlášení po ověření"""
     client.post("/register", json=test_user)
     db = TestingSessionLocal()
     user = db.query(models.User).filter(models.User.email == test_user["email"]).first()
@@ -112,23 +112,23 @@ def test_login_verified_user():
     assert "access_token" in response_login.json()
 
 def test_create_subscription():
-    """Тест 6: Создание подписки авторизованным пользователем"""
-    # Регистрация и верификация
+    """Test 6: Vytvoření předplatného autorizovaným uživatelem"""
+    # Registrace a ověření
     client.post("/register", json=test_user)
     db = TestingSessionLocal()
     user = db.query(models.User).filter(models.User.email == test_user["email"]).first()
-    user.is_verified = True # симуляция верификации
+    user.is_verified = True  # simulace ověření
     db.commit()
     db.close()
 
-    # Логин для получения токена
+    # Přihlášení pro získání tokenu
     token_response = client.post("/login", json={
         "email": test_user["email"],
         "password": test_user["password"]
     })
     token = token_response.json()["access_token"]
     
-    # Запрос на создание подписки
+    # Vytvoření předplatného
     sub_data = {
         "name": "Netflix",
         "price": 300,
@@ -147,8 +147,8 @@ def test_create_subscription():
     assert "id" in data
 
 def test_get_subscriptions():
-    """Тест 7: Получение списка подписок"""
-    # Регистрация и верификация
+    """Test 7: Získání seznamu předplatných"""
+    # Registrace a ověření
     client.post("/register", json=test_user)
     db = TestingSessionLocal()
     user = db.query(models.User).filter(models.User.email == test_user["email"]).first()
@@ -163,16 +163,16 @@ def test_get_subscriptions():
     token = token_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Изначально список пуст
+    # Prvně je seznam prázdný
     resp_empty = client.get("/api/subscriptions", headers=headers)
     assert resp_empty.status_code == 200
     assert len(resp_empty.json()) == 0
     
-    # Создаем 2 подписки
+    # Vytvoříme 2 předplatné
     client.post("/api/subscriptions", json={"name": "Spotify", "price": 169, "currency": "CZK", "cycle": "Měsíčně", "nextPayment": "2026-04-10"}, headers=headers)
     client.post("/api/subscriptions", json={"name": "Apple TV", "price": 139, "currency": "CZK", "cycle": "Měsíčně", "nextPayment": "2026-04-10"}, headers=headers)
     
-    # Проверяем, что теперь их 2
+    # Teď jich musí být 2
     resp_full = client.get("/api/subscriptions", headers=headers)
     assert resp_full.status_code == 200
     assert len(resp_full.json()) == 2

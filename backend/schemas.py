@@ -1,12 +1,12 @@
 import re
 from pydantic import BaseModel, EmailStr, model_validator, field_validator
 
-# ---СХЕМЫ ДЛЯ ПОЛЬЗОВАТЕЛЯ--- 
+# --- Uživatel ---
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# 1. Схема для регистрации, данные приходят из React
+# Registrace — validace hesla + shoda hesel
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
@@ -31,7 +31,7 @@ class UserCreate(BaseModel):
         return self
 
 
-# 2. Возврат схемы в React
+# Odpověď po registraci
 class UserResponse(BaseModel):
     id: int
     username: str
@@ -40,11 +40,11 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# ---СХЕМЫ ДЛЯ ТОКЕНА---
+# --- Token ---
 class TokenData(BaseModel):
     email: str | None = None
 
-# ---СХЕМЫ ДЛЯ ВЕРИФИКАЦИИ EMAIL---
+# --- Ověření e-mailu ---
 class VerifyEmail(BaseModel):
     email: EmailStr
     code: str
@@ -52,7 +52,7 @@ class VerifyEmail(BaseModel):
 class ResendVerification(BaseModel):
     email: EmailStr
 
-# ---СХЕМЫ ДЛЯ СБРОСА ПАРОЛЯ---
+# --- Reset hesla ---
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
@@ -72,7 +72,7 @@ class ResetPassword(BaseModel):
             raise ValueError('Heslo musí obsahovat alespoň jednu číslici')
         return v
 
-# ---СХЕМЫ ДЛЯ ПОДПИСОК---
+# --- Předplatné ---
 class SubscriptionBase(BaseModel):
     name: str
     price: int
@@ -90,7 +90,7 @@ class SubscriptionResponse(SubscriptionBase):
     class Config:
         from_attributes = True
 
-# ---СХЕМЫ ДЛЯ НАСТРОЕК---
+# --- Nastavení uživatele ---
 class UserProfileResponse(BaseModel):
     username: str
     email: EmailStr
@@ -124,7 +124,7 @@ class TelegramLink(BaseModel):
 class NotificationSettingsUpdate(BaseModel):
     notify_email: bool
     notify_telegram: bool
-    notify_intervals: str # Comma-separated list
+    notify_intervals: str  # seznam oddělený čárkami (14d,7d,3d...)
     notify_language: str
 
 class NotificationSettingsResponse(BaseModel):

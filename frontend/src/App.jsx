@@ -2,15 +2,15 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from './context/LanguageContext';
 
-// Компоненты
+// Komponenty
 import Header from './components/Header';
 import Hero from './components/Hero';
 
-// Страницы
+// Stránky
 import Register from './pages/Register';
 import Login from './pages/Login';
 import About from './pages/About';
-import Services from './pages/Services'; // 👇 Подключили страницу услуг
+import Services from './pages/Services';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import VerifyEmail from './pages/VerifyEmail';
@@ -19,7 +19,7 @@ function App() {
   return (
     <LanguageProvider>
       <Routes>
-        {/* ГЛАВНАЯ СТРАНИЦА */}
+        {/* HLAVNÍ STRÁNKA */}
         <Route path="/" element={
           <>
             <Header />
@@ -27,7 +27,7 @@ function App() {
           </>
         } />
         
-        {/* СТРАНИЦА "O NÁS" */}
+        {/* STRÁNKA "O NÁS" */}
         <Route path="/about" element={
           <>
             <Header />
@@ -35,7 +35,7 @@ function App() {
           </>
         } />
 
-        {/* СТРАНИЦА "SLUŽBY" */}
+        {/* STRÁNKA "SLUŽBY" */}
         <Route path="/services" element={
           <>
             <Header />
@@ -43,7 +43,7 @@ function App() {
           </>
         } />
         
-        {/* СТРАНИЦЫ ВХОДА И РЕГИСТРАЦИИ (без хедера) */}
+        {/* PŘIHLÁŠENÍ / REGISTRACE (bez hlavičky) */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
