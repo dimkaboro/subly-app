@@ -5,7 +5,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from database import Base
-from main import app, get_db
+from main import app
+from dependencies import get_db
 import models
 
 # Testovací in-memory databáze (SQLite)
@@ -42,7 +43,7 @@ def setup_db():
 # Fixture: blokujeme skutečné odesílání e-mailů
 @pytest.fixture(autouse=True)
 def mock_emails():
-    with patch("main.send_verification_email"), patch("main.send_email_message"):
+    with patch("services.email.send_verification_email"), patch("services.email.send_email_message"):
         yield
 
 # Testovací data
