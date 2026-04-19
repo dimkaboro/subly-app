@@ -190,8 +190,9 @@ const en = {
     msgTgSuccess: 'Telegram successfully linked',
     msgTgUnlink: 'Telegram unlinked',
     msgServerErr: 'Server connection error',
-    msgWeakPwd: 'Password does not meet all requirements (min 8 chars, 1 uppercase, 1 digit)',
+    msgWeakPwd: 'Password must have at least 8 chars, 1 uppercase, 1 digit, 1 special char',
     msgPwdMismatch: 'Passwords do not match',
+    msgPastDate: 'Date cannot be in the past',
     
     // Notification Settings
     notificationSettingsTitle: 'Notification Settings',

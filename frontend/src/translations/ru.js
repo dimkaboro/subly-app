@@ -205,8 +205,9 @@ const ru = {
     msgTgSuccess: 'Telegram успешно привязан',
     msgTgUnlink: 'Telegram отвязан',
     msgServerErr: 'Ошибка подключения к серверу',
-    msgWeakPwd: 'Пароль не соответствует всем требованиям (мин 8 символов, 1 заглавная, 1 цифра, 1 спецсимвол)',
+    msgWeakPwd: 'Пароль должен содержать минимум 8 символов, 1 заглавную букву, 1 цифру и 1 спецсимвол',
     msgPwdMismatch: 'Пароли не совпадают',
+    msgPastDate: 'Дата не может быть в прошлом',
     
     // Notification Settings
     notificationSettingsTitle: 'Настройки уведомлений',

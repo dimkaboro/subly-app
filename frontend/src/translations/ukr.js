@@ -207,6 +207,7 @@ const ukr = {
     msgServerErr: 'Помилка підключення до сервера',
     msgWeakPwd: 'Пароль не відповідає всім вимогам (мін 8 символів, 1 велика літера, 1 цифра, 1 спецсимвол)',
     msgPwdMismatch: 'Паролі не збігаються',
+    msgPastDate: 'Дата не може бути в минулому',
     
     // Notification Settings
     notificationSettingsTitle: 'Налаштування сповіщень',

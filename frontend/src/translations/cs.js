@@ -207,6 +207,7 @@ const cs = {
     msgServerErr: 'Chyba připojení k serveru',
     msgWeakPwd: 'Heslo nesplňuje všechny požadavky (min 8 znaků, 1 velké, 1 číslice, 1 speciální znak)',
     msgPwdMismatch: 'Hesla se neshodují',
+    msgPastDate: 'Datum nemůže být v minulosti',
     
     // Notification Settings
     notificationSettingsTitle: 'Nastavení upozornění',

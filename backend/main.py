@@ -7,6 +7,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, date
 import random
 import string
+import calendar
 from jose import JWTError, jwt
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -122,6 +123,27 @@ async def check_upcoming_payments() -> None:
                     payment_date = datetime.strptime(sub.nextPayment, "%Y-%m-%d")
                 except ValueError:
                     continue
+
+                # --- АВТО-ПРОДЛЕНИЕ ПОДПИСКИ ---
+                # Если дата платежа уже прошла относительно текущего дня, сдвигаем её
+                if payment_date.date() < now.date():
+                    while payment_date.date() < now.date():
+                        if sub.cycle == "Měsíčně":
+                            month = payment_date.month - 1 + 1
+                            year = payment_date.year + month // 12
+                            month = month % 12 + 1
+                            day = min(payment_date.day, calendar.monthrange(year, month)[1])
+                            payment_date = payment_date.replace(year=year, month=month, day=day)
+                        elif sub.cycle == "Ročně":
+                            payment_date = payment_date.replace(year=payment_date.year + 1)
+                        else:
+                            # Если цикл неизвестен, не зацикливаемся
+                            break 
+                    
+                    sub.nextPayment = payment_date.strftime("%Y-%m-%d")
+                    db.commit()
+                    logger.info(f"[Scheduler] Auto-rolled over '{sub.name}' for user {user.email} to {sub.nextPayment}")
+                # -------------------------------
 
                 delta = payment_date - now
                 total_hours = round(delta.total_seconds() / 3600)

@@ -29,6 +29,9 @@ function Dashboard() {
 
   // Состояния для настроек
   const [profile, setProfile] = useState(null);
+  
+  // Ошибки внутри модальных окон
+  const [modalError, setModalError] = useState(null);
   const [settingsMsg, setSettingsMsg] = useState(null); // { type: 'success'|'error', text: '' }
   const [emailForm, setEmailForm] = useState({ new_email: '', password: '' });
   const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirmPassword: '' });
@@ -301,6 +304,17 @@ function Dashboard() {
 
   const handleAddSubscription = async (e) => {
     e.preventDefault();
+    setModalError(null);
+    
+    // Проверка даты
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const selectedDate = new Date(newSub.nextPayment);
+    if (selectedDate < today) {
+      setModalError(t('dashboard.msgPastDate'));
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       if (!token) { handle401(); return; }
@@ -320,6 +334,7 @@ function Dashboard() {
         const createdSub = await response.json();
         setSubscriptions([...subscriptions, createdSub]);
         setShowAddModal(false);
+        setModalError(null);
         setNewSub({ name: '', price: '', currency: 'CZK', cycle: 'Měsíčně', nextPayment: '' });
       }
     } catch (error) {
@@ -348,6 +363,7 @@ function Dashboard() {
 
   // Открыть модалку редактирования
   const openEditModal = (sub) => {
+    setModalError(null);
     setEditSub({ ...sub, price: String(sub.price) });
     setShowEditModal(true);
   };
@@ -356,6 +372,17 @@ function Dashboard() {
   const handleEditSubscription = async (e) => {
     e.preventDefault();
     if (!editSub) return;
+    setModalError(null);
+
+    // Проверка даты
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const selectedDate = new Date(editSub.nextPayment);
+    if (selectedDate < today) {
+      setModalError(t('dashboard.msgPastDate'));
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       if (!token) { handle401(); return; }
@@ -375,9 +402,10 @@ function Dashboard() {
       });
       if (response.status === 401) { handle401(); return; }
       if (response.ok) {
-        const updated = await response.json();
-        setSubscriptions(subscriptions.map(s => s.id === updated.id ? updated : s));
+        const updatedSub = await response.json();
+        setSubscriptions(subscriptions.map(s => s.id === editSub.id ? updatedSub : s));
         setShowEditModal(false);
+        setModalError(null);
         setEditSub(null);
       }
     } catch (error) {
@@ -994,9 +1022,9 @@ function Dashboard() {
           </>
         )}
 
-        {/* МОДАЛЬНОЕ ОКНО — Премиум дизайн */}
+        {/* МОДАЛЬНОЕ ОКНО ПЛЮС */}
         {showAddModal && (
-          <div style={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
+          <div style={styles.modalOverlay} onClick={() => { setShowAddModal(false); setModalError(null); }}>
             <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
               
               {/* Заголовок модального окна */}
@@ -1010,6 +1038,13 @@ function Dashboard() {
 
               {/* Разделитель */}
               <div style={styles.modalDivider} />
+
+              {/* Ошибка если дата в прошлом */}
+              {modalError && (
+                <div style={{ padding: '12px 16px', background: 'rgba(198, 40, 40, 0.08)', color: '#c62828', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1px solid rgba(198, 40, 40, 0.2)' }}>
+                  <span>⚠️</span> {modalError}
+                </div>
+              )}
 
               <form onSubmit={handleAddSubscription} style={styles.modalForm}>
                 
@@ -1065,7 +1100,7 @@ function Dashboard() {
                   </label>
                   <input 
                     type="date" required style={styles.modalInput}
-                    value={newSub.nextPayment} onChange={(e) => setNewSub({...newSub, nextPayment: e.target.value})} 
+                    value={newSub.nextPayment} onChange={(e) => { setNewSub({...newSub, nextPayment: e.target.value}); setModalError(null); }} 
                   />
                 </div>
 
@@ -1102,7 +1137,7 @@ function Dashboard() {
 
         {/* МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ */}
         {showEditModal && editSub && (
-          <div style={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
+          <div style={styles.modalOverlay} onClick={() => { setShowEditModal(false); setModalError(null); }}>
             <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
               
               <div style={styles.modalHeader}>
@@ -1114,6 +1149,13 @@ function Dashboard() {
               </div>
 
               <div style={styles.modalDivider} />
+
+              {/* Ошибка если дата в прошлом */}
+              {modalError && (
+                <div style={{ padding: '12px 16px', background: 'rgba(198, 40, 40, 0.08)', color: '#c62828', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1px solid rgba(198, 40, 40, 0.2)' }}>
+                  <span>⚠️</span> {modalError}
+                </div>
+              )}
 
               <form onSubmit={handleEditSubscription} style={styles.modalForm}>
                 
@@ -1165,7 +1207,7 @@ function Dashboard() {
                   </label>
                   <input 
                     type="date" required style={styles.modalInput}
-                    value={editSub.nextPayment} onChange={(e) => setEditSub({...editSub, nextPayment: e.target.value})} 
+                    value={editSub.nextPayment} onChange={(e) => { setEditSub({...editSub, nextPayment: e.target.value}); setModalError(null); }} 
                   />
                 </div>
 
